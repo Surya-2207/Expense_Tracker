@@ -42,6 +42,30 @@ public class BalanceController {
         );
     }
 
+
+    // GET raw totals for donut
+    @GetMapping("/summary")
+    public ResponseEntity<?> getSummary(
+            @RequestParam(required = false) Integer month,
+            @RequestParam(required = false) Integer year) {
+        String me = currentUser();
+        List<Group> myGroups = groupRepository.findByMembersContaining(me);
+        double owedToMe = 0; double iOwe = 0;
+        for (Group group : myGroups) {
+            List<GroupExpense> expenses = groupExpenseRepository.findByGroupAndIsSettlementFalseOrderByCreatedAtDesc(group);
+            if (month != null && year != null) {
+                expenses = expenses.stream().filter(e -> e.getCreatedAt() != null && e.getCreatedAt().getMonthValue() == month && e.getCreatedAt().getYear() == year).collect(Collectors.toList());
+            }
+            int memberCount = group.getMembers().size();
+            if (memberCount == 0) continue;
+            for (GroupExpense exp : expenses) {
+                double share = exp.getAmount() / memberCount;
+                if (exp.getPaidBy().equals(me)) { owedToMe += exp.getAmount() - share; }
+                else if (group.getMembers().contains(me)) { iOwe += share; }
+            }
+        }
+        return ResponseEntity.ok(Map.of("owedToMe", owedToMe, "iOwe", iOwe));
+    }
     @GetMapping
     public ResponseEntity<?> getBalances(
             @RequestParam(required = false) Integer month,

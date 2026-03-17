@@ -1934,6 +1934,76 @@ function SettingsTab({ onLogout }) {
 /* ═══════════════════════════════════════════════
    SPLITZO — DASHBOARD TAB
 ══════════════════════════════════════════════ */
+function ActivityRow({ exp, iDidPay, share, settled, paidCount, pendingCount, dateStr, isLast, userName }) {
+  const [open, setOpen] = useState(false);
+  const SP_C = ["#7c3aed","#ec4899","#06b6d4","#f97316","#16a34a","#f59e0b","#3b82f6"];
+  const Av = ({ name, size=22 }) => {
+    const c = SP_C[name.charCodeAt(0) % SP_C.length];
+    return <div style={{ width:size, height:size, borderRadius:"50%", flexShrink:0, background:`${c}22`, border:`1.5px solid ${c}44`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:size*0.38, fontWeight:900, color:c, fontFamily:"Outfit,sans-serif" }}>{name[0].toUpperCase()}</div>;
+  };
+  const paidMembers    = (exp.members||[]).filter(m => settled.includes(m));
+  const pendingMembers = (exp.members||[]).filter(m => !settled.includes(m));
+  return (
+    <div style={{ borderBottom: isLast ? "none" : "1px solid #f0eeff" }}>
+      <div style={{ display:"flex", alignItems:"center", gap:12, padding:"14px 20px" }}>
+        <div style={{ width:44, height:44, borderRadius:12, background:"linear-gradient(135deg,#ede9fe,#ddd6fe)", border:"1.5px solid #c4b5fd", display:"flex", alignItems:"center", justifyContent:"center", fontSize:22, flexShrink:0 }}>💸</div>
+        <div style={{ flex:1, minWidth:0 }}>
+          <div style={{ fontWeight:800, fontSize:14, color:"#1a0a3c", fontFamily:"Outfit,sans-serif" }}>{exp.description}</div>
+          <div style={{ fontSize:12, color:"#8b72be", marginTop:2 }}>
+            Paid by <span style={{ fontWeight:800, color:"#7c3aed" }}>{iDidPay ? "you" : exp.paidBy}</span>
+            {" · "}<span style={{ color:"#a78bfa" }}>{exp.groupEmoji} {exp.groupName}</span>
+          </div>
+          <div style={{ display:"flex", alignItems:"center", gap:6, marginTop:6, flexWrap:"wrap" }}>
+            <span style={{ fontSize:11, color:"#8b72be", fontWeight:700 }}>Split {exp.members?.length||1} ways · ₹{share}/person</span>
+            <span style={{ fontSize:11, fontWeight:800, padding:"2px 9px", borderRadius:20, background:"#f0fdf4", border:"1.5px solid #86efac", color:"#16a34a" }}>✓ {paidCount} paid</span>
+            {pendingCount > 0 && <span style={{ fontSize:11, fontWeight:800, padding:"2px 9px", borderRadius:20, background:"#fff7f0", border:"1.5px solid #fed7aa", color:"#ea580c" }}>⏳ {pendingCount} pending</span>}
+            <button onClick={() => setOpen(o => !o)} style={{ fontSize:11, fontWeight:700, color:"#7c3aed", background:"#f5f0ff", border:"1.5px solid #c4b5fd", borderRadius:20, padding:"2px 10px", cursor:"pointer", fontFamily:"Outfit,sans-serif" }}>
+              {open ? "Hide ▲" : "View all ▼"}
+            </button>
+          </div>
+        </div>
+        <div style={{ textAlign:"right", flexShrink:0 }}>
+          <div style={{ fontSize:16, fontWeight:900, color:"#7c3aed", fontFamily:"Outfit,sans-serif" }}>{fmtAmt(Number(exp.amount))}</div>
+          {dateStr && <div style={{ fontSize:11, color:"#8b72be", marginTop:2 }}>{dateStr}</div>}
+        </div>
+      </div>
+      {open && (
+        <div style={{ margin:"0 20px 14px", background:"#faf9ff", border:"1.5px solid #e4e0ff", borderRadius:12, overflow:"hidden" }}>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr" }}>
+            <div style={{ padding:"10px 14px", borderRight:"1px solid #e4e0ff" }}>
+              <div style={{ fontSize:11, fontWeight:800, color:"#16a34a", marginBottom:8, letterSpacing:"0.04em" }}>✓ PAID ({paidMembers.length})</div>
+              <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+                {paidMembers.map(m => (
+                  <div key={m} style={{ display:"flex", alignItems:"center", gap:7 }}>
+                    <Av name={m} size={22}/>
+                    <span style={{ fontSize:12, fontWeight:700, color:"#1a0a3c", flex:1 }}>{m === userName ? "you" : m}</span>
+                    <span style={{ fontSize:11, color:"#16a34a", fontWeight:700 }}>₹{share}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div style={{ padding:"10px 14px" }}>
+              <div style={{ fontSize:11, fontWeight:800, color:"#ea580c", marginBottom:8, letterSpacing:"0.04em" }}>⏳ PENDING ({pendingMembers.length})</div>
+              <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+                {pendingMembers.length === 0
+                  ? <div style={{ fontSize:12, color:"#16a34a", fontWeight:700 }}>All settled! 🎉</div>
+                  : pendingMembers.map(m => (
+                    <div key={m} style={{ display:"flex", alignItems:"center", gap:7 }}>
+                      <Av name={m} size={22}/>
+                      <span style={{ fontSize:12, fontWeight:700, color:"#1a0a3c", flex:1 }}>{m === userName ? "you" : m}</span>
+                      <span style={{ fontSize:11, color:"#ea580c", fontWeight:700 }}>₹{share}</span>
+                    </div>
+                  ))
+                }
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function SplitzoDashboard({ userName, setActiveTab }) {
   const [balances, setBalances]   = useState([]);
   const [groups, setGroups]       = useState([]);
@@ -1947,7 +2017,7 @@ function SplitzoDashboard({ userName, setActiveTab }) {
   const now = new Date();
   const [bsMonth, setBsMonth]       = useState(now.getMonth() + 1);
   const [bsYear,  setBsYear]        = useState(now.getFullYear());
-  const [bsBalances, setBsBalances] = useState([]);
+  const [bsBalances, setBsBalances] = useState({ owedToMe: 0, iOwe: 0 });
   const [bsLoading, setBsLoading]   = useState(false);
   const [allExpenses, setAllExpenses] = useState([]);
 
@@ -1967,23 +2037,30 @@ function SplitzoDashboard({ userName, setActiveTab }) {
         setRequests(rRes.data);
 
         const expenseArrays = await Promise.all(
-          grps.map(g => axios.get(`${SPLIT_URL}/groups/${g.id}/expenses`)
-            .then(r => ({ expenses: r.data, members: g.members || [] }))
-            .catch(() => ({ expenses: [], members: [] })))
+          grps.map(g => Promise.all([
+            axios.get(`${SPLIT_URL}/groups/${g.id}/expenses`).then(r => r.data).catch(() => []),
+            axios.get(`${SPLIT_URL}/balances/settlements/${g.id}`).then(r => r.data).catch(() => []),
+          ]).then(([expenses, settlements]) => ({ expenses, settlements, members: g.members || [] })))
         );
 
         let splits=0, myShare=0, paid=0, pending=0;
         const allExps = [];
-        expenseArrays.forEach(({ expenses, members }, gi) => {
+        expenseArrays.forEach(({ expenses, settlements, members }, gi) => {
           const mc = members.length || 1;
           const g  = grps[gi];
+          const approvedByExp = {};
+          settlements.filter(s => s.status === "APPROVED").forEach(s => {
+            if (!approvedByExp[s.expenseId]) approvedByExp[s.expenseId] = new Set();
+            approvedByExp[s.expenseId].add(s.fromUsername);
+          });
           expenses.forEach(exp => {
             splits++;
             const share = Number(exp.amount) / mc;
             myShare += share;
             if (exp.paidBy === userName) paid++;
             else pending++;
-            allExps.push({ ...exp, members, groupName:g?.name||"", groupEmoji:g?.emoji||"🏘️", groupId:g?.id });
+            const settledBy = [...new Set([exp.paidBy, ...(approvedByExp[exp.id] || [])])];
+            allExps.push({ ...exp, members, groupName:g?.name||"", groupEmoji:g?.emoji||"🏘️", groupId:g?.id, settledBy });
           });
         });
         allExps.sort((a,b) => new Date(b.createdAt||0) - new Date(a.createdAt||0));
@@ -1999,8 +2076,7 @@ function SplitzoDashboard({ userName, setActiveTab }) {
     const fetchBsBalances = async () => {
       setBsLoading(true);
       try {
-        const r = await axios.get(`${SPLIT_URL}/balances?month=${bsMonth}&year=${bsYear}`);
-        console.log("BS API response:", r.data);
+        const r = await axios.get(`${SPLIT_URL}/balances/summary?month=${bsMonth}&year=${bsYear}`);
         setBsBalances(r.data);
       } catch (e) { console.error(e); }
       finally { setBsLoading(false); }
@@ -2026,10 +2102,11 @@ function SplitzoDashboard({ userName, setActiveTab }) {
   const owedMe    = balances.filter(b => b.to   === userName && b.amount > 0);
   const totalOwe  = iOwe.reduce((s,b)  => s + Number(b.amount), 0);
   const totalOwed = owedMe.reduce((s,b) => s + Number(b.amount), 0);
-  const bsIOwe    = (Array.isArray(bsBalances) ? bsBalances : []).filter(b => b.from === userName && b.amount > 0);
-  const bsOwedMe  = (Array.isArray(bsBalances) ? bsBalances : []).filter(b => b.to   === userName && b.amount > 0);
-  const bsOwe     = bsIOwe.reduce((s,b)   => s + Number(b.amount), 0);
-  const bsOwd     = bsOwedMe.reduce((s,b) => s + Number(b.amount), 0);
+  const bsArr     = Array.isArray(bsBalances) ? bsBalances : [];
+  const bsIOwe    = bsArr.filter(b => b.from === userName && b.amount > 0);
+  const bsOwedMe  = bsArr.filter(b => b.to   === userName && b.amount > 0);
+  const bsOwe     = bsBalances?.iOwe    ? Number(bsBalances.iOwe)    : 0;
+  const bsOwd     = bsBalances?.owedToMe ? Number(bsBalances.owedToMe) : 0;
   const bsNet     = bsOwd - bsOwe;
   const bsEmpty   = bsOwe + bsOwd === 0;
   const bsDonut   = bsEmpty ? [{name:"e",value:1}] : [{name:"Owed to You",value:bsOwd},{name:"You Owe",value:bsOwe}];
@@ -2143,35 +2220,19 @@ function SplitzoDashboard({ userName, setActiveTab }) {
           ? <div style={{ textAlign:"center", padding:"28px 0", color:"#8b72be", fontSize:13 }}>No group activity yet</div>
           : <div>
               {allExpenses.slice(0,8).map((exp, i, arr) => {
-                const iDidPay = exp.paidBy === userName;
-                const myBalance = iOwe.find(b => b.groupId === exp.groupId);
-                const isPaid  = iDidPay || !myBalance;
-                const mc      = exp.members?.length || 1;
-                const share   = (Number(exp.amount) / mc).toFixed(2);
-                const dateStr = exp.createdAt
+                const iDidPay  = exp.paidBy === userName;
+                const mc       = exp.members?.length || 1;
+                const share    = Math.round(Number(exp.amount) / mc);
+                const settled  = exp.settledBy || [exp.paidBy];
+                const paidCount    = settled.length;
+                const pendingCount = mc - paidCount;
+                const dateStr  = exp.createdAt
                   ? new Date(exp.createdAt).toLocaleDateString("en-IN", { day:"2-digit", month:"short" })
                   : "";
                 return (
-                  <div key={exp.id} style={{ display:"flex", alignItems:"center", gap:14, padding:"14px 20px", borderBottom:i<arr.length-1?"1px solid #f0eeff":"none" }}>
-                    <div style={{ width:44, height:44, borderRadius:12, background:"linear-gradient(135deg,#ede9fe,#ddd6fe)", border:"1.5px solid #c4b5fd", display:"flex", alignItems:"center", justifyContent:"center", fontSize:22, flexShrink:0 }}>💸</div>
-                    <div style={{ flex:1, minWidth:0 }}>
-                      <div style={{ fontWeight:800, fontSize:14, color:"#1a0a3c", fontFamily:"Outfit,sans-serif" }}>{exp.description}</div>
-                      <div style={{ fontSize:12, color:"#8b72be", marginTop:3 }}>
-                        Paid by <span style={{ fontWeight:800, color:"#7c3aed" }}>{iDidPay ? "you" : exp.paidBy}</span>
-                        {" · "}₹{share}/person
-                        {" · "}<span style={{ color:"#a78bfa" }}>{exp.groupEmoji} {exp.groupName}</span>
-                      </div>
-                    </div>
-                    <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:4, flexShrink:0 }}>
-                      <div style={{ fontSize:16, fontWeight:900, color:"#7c3aed", fontFamily:"Outfit,sans-serif" }}>{fmtAmt(Number(exp.amount))}</div>
-                      {dateStr && <div style={{ fontSize:11, color:"#8b72be" }}>{dateStr}</div>}
-                      <span style={{ fontSize:10, fontWeight:800, padding:"2px 9px", borderRadius:20, fontFamily:"Outfit,sans-serif",
-                        background:isPaid?"linear-gradient(135deg,#f0fdf4,#dcfce7)":"linear-gradient(135deg,#fff1f2,#fce7eb)",
-                        border:`1.5px solid ${isPaid?"#86efac":"#fda4af"}`,
-                        color:isPaid?"#16a34a":"#e11d48"
-                      }}>{isPaid ? "✓ Paid" : "⏳ Unpaid"}</span>
-                    </div>
-                  </div>
+                  <ActivityRow key={exp.id} exp={exp} iDidPay={iDidPay} share={share}
+                    settled={settled} paidCount={paidCount} pendingCount={pendingCount}
+                    dateStr={dateStr} isLast={i===arr.length-1} userName={userName}/>
                 );
               })}
             </div>
@@ -2300,16 +2361,17 @@ function FriendsTab({ userName }) {
   );
 
   return (
-    <div style={{ maxWidth:720 }}>
+    <div>
       {toast && <div style={{ background:"#f0fdf4", border:"1.5px solid #86efac", borderRadius:10, padding:"10px 16px", marginBottom:16, color:"#14532d", fontWeight:700, fontSize:13, fontFamily:"Outfit,sans-serif" }}>✅ {toast}</div>}
 
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:12, marginBottom:24 }}>
+      {/* STAT CARDS */}
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:12, marginBottom:20 }}>
         <SmallCard icon="🤝" label="Total Friends"    value={friends.length}   meta="connected"         bg="linear-gradient(160deg,#f5f0ff,#e9d5ff)" border="#a855f7" lc="#7c3aed" ac="#4c1d95"/>
         <SmallCard icon="📨" label="Pending Requests" value={requests.length}  meta="waiting for reply" bg="linear-gradient(160deg,#fffbeb,#fef9c3)" border="#fbbf24" lc="#d97706" ac="#92400e"/>
         <SmallCard icon="👥" label="Shared Groups"    value={0}                meta="groups in common"  bg="linear-gradient(160deg,#e0fffe,#cffafe)"  border="#22d3ee" lc="#0891b2" ac="#164e63"/>
       </div>
 
-      {/* FIND FRIENDS */}
+      {/* FIND FRIENDS — full width */}
       <div className="panel" style={{ marginBottom:16 }}>
         <div className="panel-header"><h3 className="panel-title">🔍 Find Friends</h3></div>
         <div style={{ padding:"16px 20px" }}>
@@ -2321,7 +2383,7 @@ function FriendsTab({ userName }) {
             <button onClick={searchUsers} disabled={searching} style={{ padding:"10px 22px", borderRadius:9, border:"none", background:"linear-gradient(135deg,#7c3aed,#ec4899)", color:"#fff", fontWeight:700, fontSize:13, cursor:"pointer", fontFamily:"Outfit,sans-serif", whiteSpace:"nowrap" }}>{searching?"...":"Search"}</button>
           </div>
           {results.length > 0 && (
-            <div style={{ marginTop:12, display:"flex", flexDirection:"column", gap:8 }}>
+            <div style={{ marginTop:12, display:"grid", gridTemplateColumns:"repeat(2,1fr)", gap:8 }}>
               {results.map(u => (
                 <div key={u.username} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"12px 14px", background:"#faf9ff", borderRadius:12, border:"1.5px solid #e4e0ff" }}>
                   <div style={{ display:"flex", alignItems:"center", gap:12 }}><Av name={u.username} size={40}/><div><div style={{ fontWeight:800, color:"#1a0a3c", fontFamily:"Outfit,sans-serif", fontSize:14 }}>{u.username}</div><div style={{ fontSize:11, color:"#8b72be" }}>@{u.username}</div></div></div>
@@ -2337,73 +2399,158 @@ function FriendsTab({ userName }) {
         </div>
       </div>
 
-      {/* PENDING REQUESTS */}
-      {requests.length > 0 && (
-        <div className="panel" style={{ marginBottom:16 }}>
-          <div className="panel-header"><h3 className="panel-title">{`📨 Friend Requests · ${requests.length}`}</h3></div>
-          <div style={{ padding:"12px 16px", display:"flex", flexDirection:"column", gap:10 }}>
-            {requests.map(r => (
-              <div key={r.id} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"12px 14px", background:"linear-gradient(135deg,#fffbeb,#fef9c3)", borderRadius:12, border:"1.5px solid #fde68a" }}>
-                <div style={{ display:"flex", alignItems:"center", gap:12 }}><Av name={r.fromUsername} size={42}/><div><div style={{ fontWeight:800, color:"#1a0a3c", fontFamily:"Outfit,sans-serif", fontSize:14 }}>{r.fromUsername}</div><div style={{ fontSize:11, color:"#92400e", marginTop:2 }}>wants to be friends</div></div></div>
-                <div style={{ display:"flex", gap:8 }}>
-                  <button onClick={() => respondRequest(r.id,"accept")} style={{ padding:"7px 16px", borderRadius:8, border:"none", background:"#16a34a", color:"#fff", fontWeight:700, fontSize:12, cursor:"pointer" }}>✓ Accept</button>
-                  <button onClick={() => respondRequest(r.id,"reject")} style={{ padding:"7px 12px", borderRadius:8, border:"1.5px solid #fda4af", background:"#fff1f2", color:"#e11d48", fontWeight:700, fontSize:12, cursor:"pointer" }}>✕ Decline</button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* MY FRIENDS + PENDING side by side */}
+      <div style={{ display:"grid", gridTemplateColumns: requests.length > 0 ? "1fr 1fr" : "1fr", gap:16, marginBottom:16 }}>
 
-      {/* MY FRIENDS */}
-      <div className="panel">
-        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"15px 20px 13px", borderBottom:"1.5px solid #e4e0ff", background:"linear-gradient(135deg,#faf9ff,#f5f0ff)" }}>
-          <span style={{ fontSize:15, fontWeight:800, color:"#1a0a3c", fontFamily:"Outfit,sans-serif" }}>👥 My Friends</span>
-          <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-            <span style={{ fontSize:12, fontWeight:700, color:"#7c3aed", background:"#ede9fe", padding:"3px 10px", borderRadius:20, border:"1px solid #c4b5fd" }}>{friends.length}</span>
-            <div style={{ position:"relative" }}>
-              <span style={{ position:"absolute", left:9, top:"50%", transform:"translateY(-50%)", fontSize:12, color:"#8b72be" }}>🔍</span>
-              <input value={friendSearch} onChange={e => setFriendSearch(e.target.value)} placeholder="Filter..." style={{ padding:"6px 10px 6px 26px", borderRadius:8, border:"1.5px solid #e4e0ff", background:"#faf9ff", fontFamily:"Outfit,sans-serif", fontSize:12, outline:"none", width:130, color:"#1a0a3c" }}/>
+        {/* MY FRIENDS */}
+        <div className="panel">
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"15px 20px 13px", borderBottom:"1.5px solid #e4e0ff", background:"linear-gradient(135deg,#faf9ff,#f5f0ff)" }}>
+            <span style={{ fontSize:15, fontWeight:800, color:"#1a0a3c", fontFamily:"Outfit,sans-serif" }}>👥 My Friends</span>
+            <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+              <span style={{ fontSize:12, fontWeight:700, color:"#7c3aed", background:"#ede9fe", padding:"3px 10px", borderRadius:20, border:"1px solid #c4b5fd" }}>{friends.length}</span>
+              <div style={{ position:"relative" }}>
+                <span style={{ position:"absolute", left:9, top:"50%", transform:"translateY(-50%)", fontSize:12, color:"#8b72be" }}>🔍</span>
+                <input value={friendSearch} onChange={e => setFriendSearch(e.target.value)} placeholder="Filter..." style={{ padding:"6px 10px 6px 26px", borderRadius:8, border:"1.5px solid #e4e0ff", background:"#faf9ff", fontFamily:"Outfit,sans-serif", fontSize:12, outline:"none", width:130, color:"#1a0a3c" }}/>
+              </div>
             </div>
           </div>
+          <div style={{ padding:"12px 16px", display:"flex", flexDirection:"column", gap:10 }}>
+            {displayed.length === 0
+              ? <div style={{ textAlign:"center", padding:"32px 0", color:"#8b72be" }}><div style={{ fontSize:40, marginBottom:8 }}>👥</div><p style={{ fontWeight:700, fontFamily:"Outfit,sans-serif", fontSize:14 }}>No friends yet — search and add some!</p></div>
+              : displayed.map(f => (
+                <div key={f.username} style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 14px", background:"#faf9ff", borderRadius:12, border:"1.5px solid #e4e0ff" }}>
+                  <Av name={f.username} size={44}/>
+                  <div style={{ flex:1 }}><div style={{ fontWeight:800, color:"#1a0a3c", fontFamily:"Outfit,sans-serif", fontSize:14 }}>{f.username}</div><div style={{ fontSize:11, color:"#8b72be", marginTop:2 }}>@{f.username}</div></div>
+                  <button onClick={() => { if (window.confirm(`Remove ${f.username} from friends?`)) removeFriend(f.username); }} style={{ padding:"6px 12px", borderRadius:8, border:"1.5px solid #fda4af", background:"#fff1f2", color:"#e11d48", fontWeight:700, fontSize:11, cursor:"pointer", fontFamily:"Outfit,sans-serif" }}>Remove</button>
+                </div>
+              ))
+            }
+          </div>
         </div>
-        <div style={{ padding:"12px 16px", display:"flex", flexDirection:"column", gap:10 }}>
-          {displayed.length === 0
-            ? <div style={{ textAlign:"center", padding:"32px 0", color:"#8b72be" }}><div style={{ fontSize:40, marginBottom:8 }}>👥</div><p style={{ fontWeight:700, fontFamily:"Outfit,sans-serif", fontSize:14 }}>No friends yet — search and add some!</p></div>
-            : displayed.map(f => (
-              <div key={f.username} style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 14px", background:"#faf9ff", borderRadius:12, border:"1.5px solid #e4e0ff" }}>
-                <Av name={f.username} size={44}/>
-                <div style={{ flex:1 }}><div style={{ fontWeight:800, color:"#1a0a3c", fontFamily:"Outfit,sans-serif", fontSize:14 }}>{f.username}</div><div style={{ fontSize:11, color:"#8b72be", marginTop:2 }}>@{f.username}</div></div>
-                <button onClick={() => { if (window.confirm(`Remove ${f.username} from friends?`)) removeFriend(f.username); }} style={{ padding:"6px 12px", borderRadius:8, border:"1.5px solid #fda4af", background:"#fff1f2", color:"#e11d48", fontWeight:700, fontSize:11, cursor:"pointer", fontFamily:"Outfit,sans-serif" }}>Remove</button>
-              </div>
-            ))
-          }
-        </div>
+
+        {/* PENDING REQUESTS — only if any */}
+        {requests.length > 0 && (
+          <div className="panel">
+            <div className="panel-header"><h3 className="panel-title">{`📨 Friend Requests · ${requests.length}`}</h3></div>
+            <div style={{ padding:"12px 16px", display:"flex", flexDirection:"column", gap:10 }}>
+              {requests.map(r => (
+                <div key={r.id} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"12px 14px", background:"linear-gradient(135deg,#fffbeb,#fef9c3)", borderRadius:12, border:"1.5px solid #fde68a" }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:12 }}><Av name={r.fromUsername} size={42}/><div><div style={{ fontWeight:800, color:"#1a0a3c", fontFamily:"Outfit,sans-serif", fontSize:14 }}>{r.fromUsername}</div><div style={{ fontSize:11, color:"#92400e", marginTop:2 }}>wants to be friends</div></div></div>
+                  <div style={{ display:"flex", gap:8 }}>
+                    <button onClick={() => respondRequest(r.id,"accept")} style={{ padding:"7px 16px", borderRadius:8, border:"none", background:"#16a34a", color:"#fff", fontWeight:700, fontSize:12, cursor:"pointer" }}>✓ Accept</button>
+                    <button onClick={() => respondRequest(r.id,"reject")} style={{ padding:"7px 12px", borderRadius:8, border:"1.5px solid #fda4af", background:"#fff1f2", color:"#e11d48", fontWeight:700, fontSize:12, cursor:"pointer" }}>✕ Decline</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
       </div>
     </div>
   );
 }
 
 
+function ExpenseDetailRow({ exp, share, paidMs, pendingMs, allPaid, isLast, expView, userName, Av }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div style={{ borderBottom: isLast ? "none" : "1px solid #f0eeff" }}>
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"14px 20px" }}>
+        <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+          <div style={{ width:38, height:38, borderRadius:10, background:"linear-gradient(135deg,#ede9fe,#ddd6fe)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, border:"1.5px solid #c4b5fd", flexShrink:0 }}>💸</div>
+          <div>
+            <div style={{ display:"flex", alignItems:"center", gap:7 }}>
+              <span style={{ fontWeight:700, color:"#1a0a3c", fontFamily:"Outfit,sans-serif", fontSize:14 }}>{exp.description}</span>
+              {allPaid
+                ? <span style={{ fontSize:10, fontWeight:800, padding:"2px 8px", borderRadius:20, background:"#f0fdf4", border:"1.5px solid #86efac", color:"#16a34a" }}>✓ Closed</span>
+                : <span style={{ fontSize:10, fontWeight:800, padding:"2px 8px", borderRadius:20, background:"#fff7f0", border:"1.5px solid #fed7aa", color:"#ea580c" }}>⏳ Pending</span>
+              }
+            </div>
+            <div style={{ fontSize:11, color:"#8b72be", marginTop:2 }}>
+              Paid by <strong style={{ color:"#7c3aed" }}>{exp.paidBy === userName ? "you" : exp.paidBy}</strong> · ₹{share}/person
+            </div>
+            {expView === "pending" && !allPaid && (
+              <div style={{ display:"flex", alignItems:"center", gap:6, marginTop:5 }}>
+                <span style={{ fontSize:11, fontWeight:800, color:"#16a34a" }}>✓ {paidMs.length} paid</span>
+                <span style={{ fontSize:11, color:"#8b72be" }}>·</span>
+                <span style={{ fontSize:11, fontWeight:800, color:"#ea580c" }}>⏳ {pendingMs.length} pending</span>
+                <button onClick={() => setOpen(o => !o)} style={{ fontSize:11, fontWeight:700, color:"#7c3aed", background:"#f5f0ff", border:"1.5px solid #c4b5fd", borderRadius:20, padding:"2px 9px", cursor:"pointer", fontFamily:"Outfit,sans-serif" }}>
+                  {open ? "Hide ▲" : "View ▼"}
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+        <div style={{ textAlign:"right" }}>
+          <div style={{ fontWeight:900, color:"#7c3aed", fontFamily:"Outfit,sans-serif", fontSize:15 }}>{fmtAmt(Number(exp.amount))}</div>
+          <div style={{ fontSize:11, color:"#8b72be" }}>{new Date(exp.createdAt||exp.date).toLocaleDateString("en-IN",{day:"2-digit",month:"short"})}</div>
+        </div>
+      </div>
+      {open && expView === "pending" && (
+        <div style={{ margin:"0 20px 12px", background:"#faf9ff", border:"1.5px solid #e4e0ff", borderRadius:12, overflow:"hidden" }}>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr" }}>
+            <div style={{ padding:"10px 14px", borderRight:"1px solid #e4e0ff" }}>
+              <div style={{ fontSize:11, fontWeight:800, color:"#16a34a", marginBottom:6 }}>✓ PAID ({paidMs.length})</div>
+              {paidMs.map(m => (
+                <div key={m} style={{ display:"flex", alignItems:"center", gap:7, marginBottom:5 }}>
+                  <Av name={m} size={22}/>
+                  <span style={{ fontSize:12, fontWeight:700, color:"#1a0a3c", flex:1 }}>{m===userName?"you":m}</span>
+                  <span style={{ fontSize:11, color:"#16a34a", fontWeight:700 }}>₹{share}</span>
+                </div>
+              ))}
+            </div>
+            <div style={{ padding:"10px 14px" }}>
+              <div style={{ fontSize:11, fontWeight:800, color:"#ea580c", marginBottom:6 }}>⏳ PENDING ({pendingMs.length})</div>
+              {pendingMs.length === 0
+                ? <div style={{ fontSize:12, color:"#16a34a", fontWeight:700 }}>All settled! 🎉</div>
+                : pendingMs.map(m => (
+                  <div key={m} style={{ display:"flex", alignItems:"center", gap:7, marginBottom:5 }}>
+                    <Av name={m} size={22}/>
+                    <span style={{ fontSize:12, fontWeight:700, color:"#1a0a3c", flex:1 }}>{m===userName?"you":m}</span>
+                    <span style={{ fontSize:11, color:"#ea580c", fontWeight:700 }}>₹{share}</span>
+                  </div>
+                ))
+              }
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ═══════════════════════════════════════════════
    SPLITZO — GROUP DETAIL (inside a group)
 ══════════════════════════════════════════════ */
 function GroupDetail({ group, userName, onBack }) {
-  const [expenses, setExpenses] = useState([]);
-  const [showForm, setShowForm] = useState(false);
-  const [desc, setDesc] = useState("");
-  const [amount, setAmount] = useState("");
-  const [paidBy, setPaidBy] = useState(userName);
-  const [loading, setLoading] = useState(false);
+  const [expenses, setExpenses]     = useState([]);
+  const [settlements, setSettlements] = useState([]);
+  const [showForm, setShowForm]     = useState(false);
+  const [desc, setDesc]             = useState("");
+  const [amount, setAmount]         = useState("");
+  const [paidBy, setPaidBy]         = useState(userName);
+  const [loading, setLoading]       = useState(false);
+  const [expView, setExpView]       = useState("pending");
 
-  const fetchExpenses = async () => {
+  const SP_C = ["#7c3aed","#ec4899","#06b6d4","#f97316","#16a34a","#f59e0b","#3b82f6"];
+  const Av = ({ name, size=22 }) => {
+    const c = SP_C[name.charCodeAt(0) % SP_C.length];
+    return <div style={{ width:size, height:size, borderRadius:"50%", flexShrink:0, background:`${c}22`, border:`1.5px solid ${c}44`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:size*0.38, fontWeight:900, color:c, fontFamily:"Outfit,sans-serif" }}>{name[0].toUpperCase()}</div>;
+  };
+
+  const fetchAll = async () => {
     try {
-      const r = await axios.get(`${SPLIT_URL}/groups/${group.id}/expenses`);
-      setExpenses(r.data);
+      const [eRes, sRes] = await Promise.all([
+        axios.get(`${SPLIT_URL}/groups/${group.id}/expenses`),
+        axios.get(`${SPLIT_URL}/balances/settlements/${group.id}`),
+      ]);
+      setExpenses(eRes.data);
+      setSettlements(sRes.data);
     } catch (e) { console.error(e); }
   };
 
-  useEffect(() => { fetchExpenses(); }, [group.id]);
+  useEffect(() => { fetchAll(); }, [group.id]);
 
   const addExpense = async () => {
     if (!desc.trim() || !amount) return;
@@ -2413,16 +2560,14 @@ function GroupDetail({ group, userName, onBack }) {
         description: desc, amount: Number(amount), paidBy,
       });
       setDesc(""); setAmount(""); setPaidBy(userName); setShowForm(false);
-      fetchExpenses();
+      fetchAll();
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
   };
 
-  // Calculate balances within group
   const members = group.members || [];
   const balances = {};
   members.forEach(m => balances[m] = 0);
-
   expenses.forEach(exp => {
     const share = exp.amount / members.length;
     members.forEach(m => {
@@ -2430,6 +2575,28 @@ function GroupDetail({ group, userName, onBack }) {
       else balances[m] -= share;
     });
   });
+
+  // Build settledBy per expense from APPROVED settlements
+  const approvedByExp = {};
+  settlements.filter(s => s.status === "APPROVED").forEach(s => {
+    if (!approvedByExp[s.expenseId]) approvedByExp[s.expenseId] = new Set();
+    approvedByExp[s.expenseId].add(s.fromUsername);
+  });
+
+  const expensesWithSettled = expenses.map(exp => {
+    const settledBy = [...new Set([exp.paidBy, ...(approvedByExp[exp.id] || [])])];
+    return { ...exp, settledBy };
+  });
+
+  const pendingExps = expensesWithSettled.filter(e => {
+    const nonPayers = members.filter(m => m !== e.paidBy);
+    return nonPayers.some(m => !e.settledBy.includes(m));
+  });
+  const closedExps  = expensesWithSettled.filter(e => {
+    const nonPayers = members.filter(m => m !== e.paidBy);
+    return nonPayers.length === 0 || nonPayers.every(m => e.settledBy.includes(m));
+  });
+  const shownExps   = expView === "pending" ? pendingExps : closedExps;
 
   const totalSpent = expenses.reduce((s, e) => s + e.amount, 0);
 
@@ -2504,80 +2671,40 @@ function GroupDetail({ group, userName, onBack }) {
               </div>
             )}
 
+            {/* Tab switcher */}
+            <div style={{ display:"flex", padding:"12px 20px", borderBottom:"1.5px solid #e4e0ff", background:"#faf9ff", gap:0 }}>
+              <button onClick={() => setExpView("pending")} style={{ padding:"7px 18px", borderRadius:"8px 0 0 8px", border:"1.5px solid #e4e0ff", borderRight:"none", background: expView==="pending" ? "linear-gradient(135deg,#7c3aed,#6d28d9)" : "#fff", color: expView==="pending" ? "#fff" : "#8b72be", fontWeight:700, fontSize:12, cursor:"pointer", fontFamily:"Outfit,sans-serif" }}>
+                ⏳ Pending <span style={{ marginLeft:4, padding:"1px 7px", borderRadius:20, background: expView==="pending"?"rgba(255,255,255,0.2)":"#fff7f0", color: expView==="pending"?"#fff":"#ea580c", fontSize:11, fontWeight:800 }}>{pendingExps.length}</span>
+              </button>
+              <button onClick={() => setExpView("history")} style={{ padding:"7px 18px", borderRadius:"0 8px 8px 0", border:"1.5px solid #e4e0ff", background: expView==="history" ? "linear-gradient(135deg,#16a34a,#15803d)" : "#fff", color: expView==="history" ? "#fff" : "#8b72be", fontWeight:700, fontSize:12, cursor:"pointer", fontFamily:"Outfit,sans-serif" }}>
+                ✓ History <span style={{ marginLeft:4, padding:"1px 7px", borderRadius:20, background: expView==="history"?"rgba(255,255,255,0.2)":"#f0fdf4", color: expView==="history"?"#fff":"#16a34a", fontSize:11, fontWeight:800 }}>{closedExps.length}</span>
+              </button>
+            </div>
+
             <div style={{ padding: "4px 0" }}>
-              {expenses.length === 0
+              {shownExps.length === 0
                 ? <div style={{ textAlign: "center", padding: "36px 0", color: "#8b72be" }}>
-                  <div style={{ fontSize: 32, marginBottom: 8 }}>💸</div>
-                  <p style={{ fontWeight: 600 }}>No expenses yet. Add the first one!</p>
-                </div>
-                : expenses.map(exp => {
-                  const share = (exp.amount / members.length).toFixed(2);
-                  return (
-                    <div key={exp.id} style={{
-                      display: "flex", alignItems: "center", justifyContent: "space-between",
-                      padding: "14px 20px", borderBottom: "1px solid #f0eeff"
-                    }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                        <div style={{
-                          width: 38, height: 38, borderRadius: 10, background: "linear-gradient(135deg,#ede9fe,#ddd6fe)",
-                          display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, border: "1.5px solid #c4b5fd"
-                        }}>
-                          💸
-                        </div>
-                        <div>
-                          <div style={{ fontWeight: 700, color: "#1a0a3c", fontFamily: "Outfit,sans-serif", fontSize: 14 }}>{exp.description}</div>
-                          <div style={{ fontSize: 11, color: "#8b72be" }}>
-                            Paid by <strong style={{ color: "#7c3aed" }}>{exp.paidBy}</strong> · ₹{share}/person
-                          </div>
-                        </div>
-                      </div>
-                      <div style={{ textAlign: "right" }}>
-                        <div style={{ fontWeight: 900, color: "#7c3aed", fontFamily: "Outfit,sans-serif", fontSize: 15 }}>
-                          {fmtAmt(Number(exp.amount))}
-                        </div>
-                        <div style={{ fontSize: 11, color: "#8b72be" }}>
-                          {new Date(exp.createdAt || exp.date).toLocaleDateString("en-IN", { day: "2-digit", month: "short" })}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })
+                    <div style={{ fontSize: 32, marginBottom: 8 }}>{expView==="pending" ? "🎉" : "📋"}</div>
+                    <p style={{ fontWeight: 600 }}>{expView==="pending" ? "All settled up!" : "No history yet"}</p>
+                  </div>
+                : shownExps.map((exp, i) => {
+                    const share       = Math.round(exp.amount / members.length);
+                    const paidMs      = members.filter(m => exp.settledBy.includes(m));
+                    const pendingMs   = members.filter(m => !exp.settledBy.includes(m));
+                    const allPaid     = pendingMs.length === 0;
+                    return (
+                      <ExpenseDetailRow key={exp.id} exp={exp} share={share} paidMs={paidMs} pendingMs={pendingMs}
+                        allPaid={allPaid} isLast={i===shownExps.length-1} expView={expView}
+                        userName={userName} Av={Av}/>
+                    );
+                  })
               }
             </div>
           </div>
         </div>
 
-        {/* Right — Balances */}
+        {/* Right — Members only */}
         <div>
-          <div className="panel" style={{ marginBottom: 16 }}>
-            <div className="panel-header"><h3 className="panel-title">⚖️ Balances</h3></div>
-            <div style={{ padding: "12px 16px", display: "flex", flexDirection: "column", gap: 10 }}>
-              {members.map(m => {
-                const bal = balances[m] || 0;
-                const isYou = m === userName;
-                return (
-                  <div key={m} style={{
-                    display: "flex", alignItems: "center", justifyContent: "space-between",
-                    padding: "10px 12px", borderRadius: 10,
-                    background: bal > 0 ? "#f0fdf4" : bal < 0 ? "#fff1f2" : "#faf9ff",
-                    border: `1.5px solid ${bal > 0 ? "#86efac" : bal < 0 ? "#fda4af" : "#e4e0ff"}`
-                  }}>
-                    <div style={{ fontWeight: 700, color: "#1a0a3c", fontFamily: "Outfit,sans-serif", fontSize: 13 }}>
-                      {m}{isYou ? " (you)" : ""}
-                    </div>
-                    <div style={{
-                      fontWeight: 900, fontSize: 13, fontFamily: "Outfit,sans-serif",
-                      color: bal > 0 ? "#16a34a" : bal < 0 ? "#e11d48" : "#8b72be"
-                    }}>
-                      {bal > 0 ? `+₹${bal.toFixed(2)}` : bal < 0 ? `-₹${Math.abs(bal).toFixed(2)}` : "Settled"}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Members */}
           <div className="panel">
             <div className="panel-header"><h3 className="panel-title">👥 Members</h3></div>
             <div style={{ padding: "12px 16px", display: "flex", flexDirection: "column", gap: 8 }}>
@@ -2688,7 +2815,7 @@ function GroupsTab({ userName }) {
           </div>
           <div style={{ display:"flex", alignItems:"center", gap:6 }}>
             <span style={{ fontSize:11, fontWeight:800, padding:"4px 11px", borderRadius:20, background:"linear-gradient(135deg,#f5f0ff,#e9d5ff)", color:"#7c3aed", border:"1.5px solid #ddd6fe", fontFamily:"Outfit,sans-serif" }}>{g.inviteCode}</span>
-            <button onClick={e => { e.stopPropagation(); setCopied(g.inviteCode); setTimeout(()=>setCopied(null),2000); }} style={{ width:28, height:28, borderRadius:7, border:`1.5px solid ${copied===g.inviteCode?"#86efac":"#ddd6fe"}`, background:copied===g.inviteCode?"#f0fdf4":"#f5f0ff", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, color:copied===g.inviteCode?"#16a34a":"#7c3aed", fontWeight:900 }}>{copied===g.inviteCode?"✓":"⧉"}</button>
+            <button onClick={e => { e.stopPropagation(); navigator.clipboard.writeText(g.inviteCode); setCopied(g.inviteCode); setTimeout(()=>setCopied(null),2000); }} style={{ width:28, height:28, borderRadius:7, border:`1.5px solid ${copied===g.inviteCode?"#86efac":"#ddd6fe"}`, background:copied===g.inviteCode?"#f0fdf4":"#f5f0ff", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, color:copied===g.inviteCode?"#16a34a":"#7c3aed", fontWeight:900 }}>{copied===g.inviteCode?"✓":"⧉"}</button>
           </div>
         </div>
         <div style={{ fontWeight:900, fontSize:17, color:isActive?"#1a0a3c":"#6b7280", fontFamily:"Outfit,sans-serif", marginBottom:2 }}>{g.name}</div>
