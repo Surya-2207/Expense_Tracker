@@ -75,4 +75,4 @@ public class ExpenseController {
         expenseRepository.delete(expense);
         return "Deleted Successfully";
     }
-}
+}   

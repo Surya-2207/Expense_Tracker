@@ -99,12 +99,12 @@ function YearPicker({ value, onChange }) {
     if (!el) return;
     const total = el.scrollHeight - el.clientHeight;
     if (el.scrollTop < ITEM_H * 5) {
-      // Near top — shift center up by 20
-      setCenterYear(c => c + 20);
+      // Near top — shift center toward earlier (smaller) years
+      setCenterYear(c => c - 20);
       el.scrollTop += 20 * ITEM_H;
     } else if (el.scrollTop > total - ITEM_H * 5) {
-      // Near bottom — shift center down by 20
-      setCenterYear(c => c - 20);
+      // Near bottom — shift center toward later (larger) years
+      setCenterYear(c => c + 20);
       el.scrollTop -= 20 * ITEM_H;
     }
   };
@@ -388,33 +388,22 @@ function DashboardTab({ expenses }) {
   const selDate = new Date(selYear, selMonth - 1, 1);
   const monthName = selDate.toLocaleString("default", { month: "long", year: "numeric" });
 
-  // ── Gradient board card helper ──
-  const GradCard = ({ icon, label, value, meta, bg, border, labelColor, valueColor }) => (
+  // ── W1 Pill card helper ──
+  const GradCard = ({ icon, label, value, meta, from, to, big }) => (
     <div style={{
-      background: bg, border: `1.5px solid ${border}`, borderRadius: 18,
-      padding: "18px 20px", display: "flex", alignItems: "center", gap: 14,
-      boxShadow: "0 2px 12px rgba(0,0,0,0.06)", minWidth: 0,
+      background: `linear-gradient(135deg,${from},${to})`,
+      borderRadius: big ? 18 : 16,
+      padding: big ? "20px 22px" : "14px 16px",
+      display: "flex", flexDirection: big ? "row" : "column",
+      alignItems: big ? "center" : "flex-start",
+      gap: big ? 16 : 6,
+      boxShadow: "0 2px 12px rgba(0,0,0,0.10)",
     }}>
-      <div style={{
-        width: 44, height: 44, borderRadius: 12, background: "rgba(255,255,255,0.55)",
-        display: "flex", alignItems: "center", justifyContent: "center",
-        fontSize: 22, flexShrink: 0, boxShadow: "0 1px 6px rgba(0,0,0,0.08)",
-      }}>{icon}</div>
-      <div style={{ minWidth: 0 }}>
-        <p style={{
-          margin: 0, fontSize: 10, fontWeight: 800, color: labelColor,
-          letterSpacing: "0.07em", textTransform: "uppercase", fontFamily: "Outfit,sans-serif"
-        }}>{label}</p>
-        <h2 style={{
-          margin: "3px 0 2px", fontSize: 22, fontWeight: 900, color: valueColor,
-          fontFamily: "Outfit,sans-serif", letterSpacing: "-0.01em", whiteSpace: "nowrap"
-        }}>
-          {value}
-        </h2>
-        <p style={{
-          margin: 0, fontSize: 11, color: labelColor, opacity: 0.75,
-          fontFamily: "Outfit,sans-serif"
-        }}>{meta}</p>
+      <div style={{ width: big?48:36, height: big?48:36, borderRadius: big?14:10, background: "rgba(255,255,255,0.25)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: big?24:18, flexShrink: 0 }}>{icon}</div>
+      <div>
+        <div style={{ fontSize: 9, fontWeight: 800, color: "rgba(255,255,255,0.7)", letterSpacing: "0.1em", textTransform: "uppercase", fontFamily: "Outfit,sans-serif", marginBottom: 3 }}>{label}</div>
+        <div style={{ fontSize: big?28:22, fontWeight: 900, color: "#fff", letterSpacing: "-0.03em", lineHeight: 1.1, fontFamily: "Outfit,sans-serif" }}>{value}</div>
+        <div style={{ fontSize: 10, color: "rgba(255,255,255,0.6)", marginTop: 3, fontFamily: "Outfit,sans-serif", fontWeight: 600 }}>{meta}</div>
       </div>
     </div>
   );
@@ -433,15 +422,13 @@ function DashboardTab({ expenses }) {
         <div style={{ flex: 1, height: 1, background: "linear-gradient(90deg,#d1fae5,transparent)" }} />
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 20 }}>
-        <GradCard icon="🌐" label="Overall Total"
+        <GradCard big icon="🌐" label="Overall Total"
           value={fmtAmt(overallTotal)} meta={`${expenses.length} transactions all time`}
-          bg="linear-gradient(135deg,#f0fff4,#bbf7d0)" border="#4ade80"
-          labelColor="#16a34a" valueColor="#14532d" />
-        <GradCard icon="📊" label="All Time Average"
+          from="#16a34a" to="#4ade80" />
+        <GradCard big icon="📊" label="All Time Average"
           value={fmtAmt(expenses.length ? Math.round(overallTotal / expenses.length) : 0)}
           meta="Per transaction overall"
-          bg="linear-gradient(135deg,#fff7f0,#fed7aa)" border="#fb923c"
-          labelColor="#ea580c" valueColor="#9a3412" />
+          from="#ea580c" to="#fb923c" />
       </div>
 
       {/* ── YEAR section — synced to year picker ── */}
@@ -455,39 +442,13 @@ function DashboardTab({ expenses }) {
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 12, marginBottom: 24 }}>
         {[
-          { icon: "💰", label: `${selYear} Total`,              amt: yearTotal,      meta: `${yearExpenses.length} transactions`,  bg: "linear-gradient(160deg,#f5f0ff,#e9d5ff)", border: "#a855f7", lc: "#7c3aed", ac: "#4c1d95" },
-          { icon: "📈", label: `Highest in ${selYear}`,         amt: yearHighest,    meta: "Single transaction",                   bg: "linear-gradient(160deg,#fff0f9,#fce7f3)", border: "#f472b6", lc: "#db2777", ac: "#9d174d" },
-          { icon: "📉", label: `Avg in ${selYear}`,             amt: yearAvg,        meta: "Per transaction",                      bg: "linear-gradient(160deg,#e0fffe,#cffafe)", border: "#22d3ee", lc: "#0891b2", ac: "#164e63" },
-          { icon: "📅", label: `Top in ${selMonthShortName}`,   amt: monthHighest,   meta: "Single transaction",                   bg: "linear-gradient(160deg,#fff1f0,#ffe0dc)", border: "#fb7185", lc: "#e11d48", ac: "#881337" },
-          { icon: "🗂️", label: `${selMonthShortName} Total`,    amt: thisMonthTotal, meta: monthChange !== null ? `${Number(monthChange) > 0 ? "↑" : "↓"} ${Math.abs(monthChange)}% vs prev` : "No prev data", bg: "linear-gradient(160deg,#fffbeb,#fef08a)", border: "#fbbf24", lc: "#d97706", ac: "#78350f" },
-        ].map(({ icon, label, amt, meta, bg, border, lc, ac }) => (
-          <div key={label} style={{
-            background: bg, border: `1.5px solid ${border}`, borderRadius: 16,
-            padding: "14px 16px", display: "flex", flexDirection: "column", gap: 8,
-            boxShadow: "0 2px 10px rgba(0,0,0,0.05)",
-          }}>
-            {/* Row 1: Icon */}
-            <div style={{
-              width: 36, height: 36, borderRadius: 10, background: "rgba(255,255,255,0.65)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 18, boxShadow: "0 1px 4px rgba(0,0,0,0.08)"
-            }}>{icon}</div>
-            {/* Row 2: Label */}
-            <div style={{
-              fontSize: 10, fontWeight: 800, color: lc, letterSpacing: "0.05em",
-              textTransform: "uppercase", fontFamily: "Outfit,sans-serif", lineHeight: 1.3
-            }}>{label}</div>
-            {/* Row 3: Amount */}
-            <div style={{
-              fontSize: 20, fontWeight: 900, color: ac,
-              fontFamily: "Outfit,sans-serif", letterSpacing: "-0.02em", lineHeight: 1
-            }}>{fmtAmt(amt)}</div>
-            {/* Row 4: Transactions / meta */}
-            <div style={{
-              fontSize: 11, color: lc, opacity: 0.75,
-              fontFamily: "Outfit,sans-serif", fontWeight: 600
-            }}>{meta}</div>
-          </div>
+          { icon: "💰", label: `${selYear} Total`,            value: fmtAmt(yearTotal),      meta: `${yearExpenses.length} transactions`, from:"#7c3aed", to:"#a855f7" },
+          { icon: "📈", label: `Highest in ${selYear}`,       value: fmtAmt(yearHighest),    meta: "Single transaction",                  from:"#db2777", to:"#f472b6" },
+          { icon: "📉", label: `Avg in ${selYear}`,           value: fmtAmt(yearAvg),        meta: "Per transaction",                     from:"#0891b2", to:"#22d3ee" },
+          { icon: "📅", label: `Top in ${selMonthShortName}`, value: fmtAmt(monthHighest),   meta: "Single transaction",                  from:"#d97706", to:"#fbbf24" },
+          { icon: "🗂️", label: `${selMonthShortName} Total`, value: fmtAmt(thisMonthTotal), meta: monthChange !== null ? `${Number(monthChange) > 0 ? "↑" : "↓"} ${Math.abs(monthChange)}% vs prev` : "No prev data", from:"#0f766e", to:"#14b8a6" },
+        ].map(({ icon, label, value, meta, from, to }) => (
+          <GradCard key={label} icon={icon} label={label} value={value} meta={meta} from={from} to={to}/>
         ))}
       </div>
 
@@ -1925,13 +1886,6 @@ function SettingsTab({ onLogout }) {
 }
 
 /* ═══════════════════════════════════════════════
-   ROOT APP
-══════════════════════════════════════════════ */
-
-/* ═══════════════════════════════════════════════
-   SPLITZO — FRIENDS TAB
-══════════════════════════════════════════════ */
-/* ═══════════════════════════════════════════════
    SPLITZO — DASHBOARD TAB
 ══════════════════════════════════════════════ */
 function ActivityRow({ exp, iDidPay, share, settled, paidCount, pendingCount, dateStr, isLast, userName }) {
@@ -2020,6 +1974,7 @@ function SplitzoDashboard({ userName, setActiveTab }) {
   const [bsBalances, setBsBalances] = useState({ owedToMe: 0, iOwe: 0 });
   const [bsLoading, setBsLoading]   = useState(false);
   const [allExpenses, setAllExpenses] = useState([]);
+  const [dashTab, setDashTab] = useState("overview");
 
   useEffect(() => {
     const load = async () => {
@@ -2111,39 +2066,134 @@ function SplitzoDashboard({ userName, setActiveTab }) {
   const bsEmpty   = bsOwe + bsOwd === 0;
   const bsDonut   = bsEmpty ? [{name:"e",value:1}] : [{name:"Owed to You",value:bsOwd},{name:"You Owe",value:bsOwe}];
 
-  const SmallCard = ({ icon, label, value, meta, bg, border, lc, ac }) => (
-    <div style={{ background:bg, border:`1.5px solid ${border}`, borderRadius:16, padding:"14px 16px", display:"flex", flexDirection:"column", gap:8, boxShadow:"0 2px 10px rgba(0,0,0,0.05)" }}>
-      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-        <span style={{ fontSize:20 }}>{icon}</span>
-        <span style={{ fontSize:11, fontWeight:700, color:lc, background:`${border}33`, padding:"2px 8px", borderRadius:20 }}>{meta}</span>
+  const SmallCard = ({ icon, label, value, meta, from, to, big }) => (
+    <div style={{
+      background: `linear-gradient(135deg,${from},${to})`,
+      borderRadius: big ? 18 : 16,
+      padding: big ? "20px 22px" : "14px 16px",
+      display: "flex", flexDirection: big ? "row" : "column",
+      alignItems: big ? "center" : "flex-start",
+      gap: big ? 16 : 6,
+      boxShadow: "0 2px 12px rgba(0,0,0,0.10)",
+    }}>
+      <div style={{ width: big?48:36, height: big?48:36, borderRadius: big?14:10, background: "rgba(255,255,255,0.25)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: big?24:18, flexShrink: 0 }}>{icon}</div>
+      <div>
+        <div style={{ fontSize: 9, fontWeight: 800, color: "rgba(255,255,255,0.7)", letterSpacing: "0.1em", textTransform: "uppercase", fontFamily: "Outfit,sans-serif", marginBottom: 3 }}>{label}</div>
+        <div style={{ fontSize: big?28:22, fontWeight: 900, color: "#fff", letterSpacing: "-0.03em", lineHeight: 1.1, fontFamily: "Outfit,sans-serif" }}>{value}</div>
+        <div style={{ fontSize: 10, color: "rgba(255,255,255,0.6)", marginTop: 3, fontFamily: "Outfit,sans-serif", fontWeight: 600 }}>{meta}</div>
       </div>
-      <div style={{ fontSize:26, fontWeight:900, color:ac, letterSpacing:"-0.03em", fontFamily:"Outfit,sans-serif" }}>{value}</div>
-      <div style={{ fontSize:11, fontWeight:700, color:lc, fontFamily:"Outfit,sans-serif" }}>{label}</div>
     </div>
   );
 
-  if (loading) return <div style={{ textAlign:"center", padding:"64px 0", color:"#8b72be", fontFamily:"Outfit,sans-serif" }}><div style={{ fontSize:36, marginBottom:12 }}>⏳</div><p style={{ fontWeight:600 }}>Loading dashboard…</p></div>;
+  if (loading) return null;
 
   return (
     <div>
-      {/* OVERVIEW */}
-      <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12 }}>
-        <span style={{ width:10, height:10, borderRadius:"50%", background:"#059669", display:"inline-block" }}/>
-        <span style={{ fontSize:11, fontWeight:800, color:"#374151", letterSpacing:"0.1em", textTransform:"uppercase", fontFamily:"Outfit,sans-serif" }}>Overview</span>
-        <div style={{ flex:1, height:1, background:"linear-gradient(90deg,#d1fae5,transparent)" }}/>
-      </div>
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(5,1fr)", gap:12, marginBottom:28 }}>
-        <SmallCard icon="👥" label="Total Groups"     value={groups.length}        meta="you're part of"    bg="linear-gradient(160deg,#f5f0ff,#e9d5ff)" border="#a855f7" lc="#7c3aed" ac="#4c1d95"/>
-        <SmallCard icon="🔀" label="Total Splits"     value={totalSplits}          meta="all groups"        bg="linear-gradient(160deg,#e0fffe,#cffafe)" border="#22d3ee" lc="#0891b2" ac="#164e63"/>
-        <SmallCard icon="💸" label="Your Total Share" value={fmtAmt(myShareTotal)} meta="your shares"       bg="linear-gradient(160deg,#fff7f0,#fed7aa)" border="#fb923c" lc="#ea580c" ac="#9a3412"/>
-        <SmallCard icon="✅" label="Splits You Paid"  value={splitsPaid}           meta="you covered"       bg="linear-gradient(160deg,#f0fff4,#d1fae5)" border="#4ade80" lc="#16a34a" ac="#14532d"/>
-        <SmallCard icon="⏳" label="Pending Splits"   value={pendingSplits}        meta="you owe"           bg="linear-gradient(160deg,#fff1f2,#fce7eb)" border="#fb7185" lc="#e11d48" ac="#881337"/>
+      {/* TABBED TOP SECTION */}
+      <div className="panel" style={{ marginBottom:20 }}>
+        <div style={{ display:"flex", borderBottom:"1.5px solid #e4e0ff", background:"#faf9ff" }}>
+          {[
+            { id:"overview", label:"📊 Overview" },
+            { id:"balance",  label:"💰 Balance Snapshot" },
+            { id:"activity", label:"📅 Split Activity" },
+          ].map(t => (
+            <button key={t.id} onClick={() => setDashTab(t.id)} style={{
+              flex:1, padding:"14px 8px", border:"none",
+              borderBottom:`2.5px solid ${dashTab===t.id?"#7c3aed":"transparent"}`,
+              background: dashTab===t.id?"#fff":"transparent",
+              color: dashTab===t.id?"#7c3aed":"#8b72be",
+              fontWeight:700, fontSize:12, cursor:"pointer", fontFamily:"Outfit,sans-serif",
+            }}>{t.label}</button>
+          ))}
+        </div>
+        <div style={{ padding:"20px" }}>
+          {dashTab === "overview" && (
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:10 }}>
+              <SmallCard icon="👥" label="Total Groups"    value={groups.length}  meta="you're part of" from="#6d28d9" to="#8b5cf6"/>
+              <SmallCard icon="🔀" label="Total Splits"    value={totalSplits}    meta="all groups"     from="#be123c" to="#fb7185"/>
+              <SmallCard icon="✅" label="Splits You Paid" value={splitsPaid}     meta="you covered"    from="#0369a1" to="#38bdf8"/>
+              <SmallCard icon="⏳" label="Pending Splits"  value={pendingSplits}  meta="you owe"        from="#b45309" to="#f59e0b"/>
+            </div>
+          )}
+          {dashTab === "balance" && (
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10 }}>
+              <SmallCard big icon="💰" label="Total Group Spend" value={fmtAmt(allExpenses.reduce((s,e)=>s+Number(e.amount),0))} meta={`${allExpenses.length} expenses`} from="#3730a3" to="#818cf8"/>
+              <SmallCard big icon="📥" label="Owed to You"       value={fmtAmt(owedMe.reduce((s,b)=>s+Number(b.amount),0))}     meta="others owe you"                   from="#065f46" to="#6ee7b7"/>
+              <SmallCard big icon="📤" label="You Owe"           value={fmtAmt(iOwe.reduce((s,b)=>s+Number(b.amount),0))}       meta="your pending dues"                from="#9a3412" to="#fdba74"/>
+            </div>
+          )}
+          {dashTab === "activity" && (() => {
+            const mnFull    = new Date(bsYear, bsMonth-1, 1).toLocaleString("default",{month:"long"});
+            const yrExps    = allExpenses.filter(e => new Date(e.createdAt||0).getFullYear() === bsYear);
+            const mnExps    = allExpenses.filter(e => { const d=new Date(e.createdAt||0); return d.getFullYear()===bsYear && d.getMonth()+1===bsMonth; });
+            const yrMyShare = yrExps.reduce((s,e) => s + Number(e.amount)/(e.members?.length||1), 0);
+            const mnPaid    = mnExps.filter(e => e.paidBy === userName).length;
+            const mnPending = mnExps.filter(e => { const mc=e.members?.length||1; return (e.settledBy||[e.paidBy]).length < mc; }).length;
+            return (
+              <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                <div style={{ display:"grid", gridTemplateColumns:"repeat(5,1fr)", gap:10 }}>
+                  <SmallCard icon="💰" label={`${bsYear} Splits`}     value={yrExps.length}    meta={fmtAmt(yrExps.reduce((s,e)=>s+Number(e.amount),0))} from="#a21caf" to="#e879f9"/>
+                  <SmallCard icon="🙋" label={`${bsYear} Your Share`} value={fmtAmt(yrMyShare)} meta="your portion"                                        from="#1d4ed8" to="#60a5fa"/>
+                  <SmallCard icon="🗂️" label={`${mnFull} Splits`}    value={mnExps.length}    meta={fmtAmt(mnExps.reduce((s,e)=>s+Number(e.amount),0))}  from="#065f46" to="#34d399"/>
+                  <SmallCard icon="✅" label={`${mnFull} Paid`}       value={mnPaid}           meta="you covered"                                          from="#92400e" to="#fbbf24"/>
+                  <SmallCard icon="⏳" label={`${mnFull} Pending`}    value={mnPending}        meta="unsettled"                                            from="#9f1239" to="#f43f5e"/>
+                </div>
+              </div>
+            );
+          })()}
+        </div>
       </div>
 
+      {/* BALANCE SPLIT — only when activity tab active */}
+      {dashTab === "activity" && (
+        <div className="panel" style={{ marginBottom:20 }}>
+          <div className="panel-header">
+            <h3 className="panel-title">⚖️ Balance Split</h3>
+            <div style={{ display:"flex", gap:8 }}>
+              <MonthPicker value={bsMonth} onChange={v => setBsMonth(Number(v))}/>
+              <YearPicker  value={bsYear}  onChange={y => setBsYear(y)}/>
+            </div>
+          </div>
+          <div style={{ padding:"24px 28px", display:"flex", alignItems:"center", gap:40, position:"relative" }}>
+            {bsLoading && <div style={{ position:"absolute", inset:0, background:"rgba(255,255,255,0.7)", display:"flex", alignItems:"center", justifyContent:"center", borderRadius:12, zIndex:10, fontSize:13, fontWeight:700, color:"#8b72be", fontFamily:"Outfit,sans-serif" }}>⏳ Loading…</div>}
+            <div style={{ position:"relative", width:200, height:200, flexShrink:0 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={bsDonut} dataKey="value" cx="50%" cy="50%" innerRadius={62} outerRadius={92} paddingAngle={bsEmpty?0:5} startAngle={90} endAngle={-270}>
+                    {bsEmpty ? <Cell fill="#e4e0ff" strokeWidth={0}/> : bsDonut.map((_,i) => <Cell key={i} fill={["#16a34a","#f97316"][i]} strokeWidth={0}/>)}
+                  </Pie>
+                </PieChart>
+              </ResponsiveContainer>
+              <div style={{ position:"absolute", top:"50%", left:"50%", transform:"translate(-50%,-50%)", textAlign:"center", pointerEvents:"none" }}>
+                <div style={{ fontSize:13, fontWeight:900, color:"#16a34a", fontFamily:"Outfit,sans-serif" }}>↑ {fmtAmt(bsOwd)}</div>
+                <div style={{ width:28, height:1.5, background:"#e4e0ff", margin:"5px auto" }}/>
+                <div style={{ fontSize:13, fontWeight:900, color:"#f97316", fontFamily:"Outfit,sans-serif" }}>↓ {fmtAmt(bsOwe)}</div>
+              </div>
+            </div>
+            <div style={{ flex:1, display:"flex", flexDirection:"column", gap:0 }}>
+              {[
+                { dot:"#16a34a", label:"Owed to You", sub:"people owe you",  val:fmtAmt(bsOwd), color:"#16a34a" },
+                { dot:"#f97316", label:"You Owe",     sub:"you owe others",  val:fmtAmt(bsOwe), color:"#f97316" },
+              ].map((row, i, arr) => (
+                <div key={row.label} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"18px 0", borderBottom:i<arr.length-1?"1px solid #f0eeff":"none" }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+                    <div style={{ width:11, height:11, borderRadius:"50%", background:row.dot, flexShrink:0 }}/>
+                    <div>
+                      <div style={{ fontWeight:800, fontSize:14, color:"#1a0a3c", fontFamily:"Outfit,sans-serif" }}>{row.label}</div>
+                      <div style={{ fontSize:12, color:"#8b72be", marginTop:1, fontFamily:"Outfit,sans-serif" }}>{row.sub}</div>
+                    </div>
+                  </div>
+                  <div style={{ fontSize:20, fontWeight:900, color:row.color, fontFamily:"Outfit,sans-serif", letterSpacing:"-0.02em" }}>{row.val}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
-      {/* FRIEND REQUESTS */}
+      {/* FRIEND REQUESTS — above group activity */}
       {requests.length > 0 && (
-        <div className="panel" style={{ marginBottom:28 }}>
+        <div className="panel" style={{ marginBottom:16 }}>
           <div className="panel-header"><h3 className="panel-title">{`📨 Friend Requests · ${requests.length}`}</h3></div>
           <div style={{ padding:"12px 16px", display:"flex", flexDirection:"column", gap:10 }}>
             {requests.map(r => (
@@ -2159,57 +2209,6 @@ function SplitzoDashboard({ userName, setActiveTab }) {
         </div>
       )}
 
-      {/* BALANCE SPLIT */}
-      <div className="panel" style={{ marginBottom:20 }}>
-        <div className="panel-header">
-          <h3 className="panel-title">⚖️ Balance Split</h3>
-          <div style={{ display:"flex", gap:8 }}>
-            <MonthPicker value={bsMonth} onChange={v => setBsMonth(Number(v))}/>
-            <YearPicker  value={bsYear}  onChange={y => setBsYear(y)}/>
-          </div>
-        </div>
-        <div style={{ padding:"24px 28px", display:"flex", alignItems:"center", gap:40, position:"relative" }}>
-          {bsLoading && <div style={{ position:"absolute", inset:0, background:"rgba(255,255,255,0.7)", display:"flex", alignItems:"center", justifyContent:"center", borderRadius:12, zIndex:10, fontSize:13, fontWeight:700, color:"#8b72be", fontFamily:"Outfit,sans-serif" }}>⏳ Loading…</div>}
-          {/* Donut */}
-          <div style={{ position:"relative", width:200, height:200, flexShrink:0 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie data={bsDonut} dataKey="value" cx="50%" cy="50%" innerRadius={62} outerRadius={92} paddingAngle={bsEmpty?0:5} startAngle={90} endAngle={-270}>
-                  {bsEmpty
-                    ? <Cell fill="#e4e0ff" strokeWidth={0}/>
-                    : bsDonut.map((_,i) => <Cell key={i} fill={["#16a34a","#f97316"][i]} strokeWidth={0}/>)
-                  }
-                </Pie>
-              </PieChart>
-            </ResponsiveContainer>
-            <div style={{ position:"absolute", top:"50%", left:"50%", transform:"translate(-50%,-50%)", textAlign:"center", pointerEvents:"none" }}>
-              <div style={{ fontSize:13, fontWeight:900, color:"#16a34a", fontFamily:"Outfit,sans-serif" }}>↑ {fmtAmt(bsOwd)}</div>
-              <div style={{ width:28, height:1.5, background:"#e4e0ff", margin:"5px auto" }}/>
-              <div style={{ fontSize:13, fontWeight:900, color:"#f97316", fontFamily:"Outfit,sans-serif" }}>↓ {fmtAmt(bsOwe)}</div>
-            </div>
-          </div>
-
-          {/* Legend rows */}
-          <div style={{ flex:1, display:"flex", flexDirection:"column", gap:0 }}>
-            {[
-              { dot:"#16a34a", label:"Owed to You", sub:"people owe you",  val: fmtAmt(bsOwd), color:"#16a34a" },
-              { dot:"#f97316", label:"You Owe",     sub:"you owe others",  val: fmtAmt(bsOwe), color:"#f97316" },
-            ].map((row, i, arr) => (
-              <div key={row.label} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"18px 0", borderBottom: i < arr.length-1 ? "1px solid #f0eeff" : "none" }}>
-                <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-                  <div style={{ width:11, height:11, borderRadius:"50%", background:row.dot, flexShrink:0 }}/>
-                  <div>
-                    <div style={{ fontWeight:800, fontSize:14, color:"#1a0a3c", fontFamily:"Outfit,sans-serif" }}>{row.label}</div>
-                    <div style={{ fontSize:12, color:"#8b72be", marginTop:1, fontFamily:"Outfit,sans-serif" }}>{row.sub}</div>
-                  </div>
-                </div>
-                <div style={{ fontSize:20, fontWeight:900, color:row.color, fontFamily:"Outfit,sans-serif", letterSpacing:"-0.02em" }}>{row.val}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
       {/* GROUP ACTIVITY FEED */}
       <div className="panel" style={{ marginBottom:16 }}>
         <div className="panel-header">
@@ -2220,15 +2219,13 @@ function SplitzoDashboard({ userName, setActiveTab }) {
           ? <div style={{ textAlign:"center", padding:"28px 0", color:"#8b72be", fontSize:13 }}>No group activity yet</div>
           : <div>
               {allExpenses.slice(0,8).map((exp, i, arr) => {
-                const iDidPay  = exp.paidBy === userName;
-                const mc       = exp.members?.length || 1;
-                const share    = Math.round(Number(exp.amount) / mc);
-                const settled  = exp.settledBy || [exp.paidBy];
+                const iDidPay      = exp.paidBy === userName;
+                const mc           = exp.members?.length || 1;
+                const share        = Math.round(Number(exp.amount) / mc);
+                const settled      = exp.settledBy || [exp.paidBy];
                 const paidCount    = settled.length;
                 const pendingCount = mc - paidCount;
-                const dateStr  = exp.createdAt
-                  ? new Date(exp.createdAt).toLocaleDateString("en-IN", { day:"2-digit", month:"short" })
-                  : "";
+                const dateStr      = exp.createdAt ? new Date(exp.createdAt).toLocaleDateString("en-IN",{day:"2-digit",month:"short"}) : "";
                 return (
                   <ActivityRow key={exp.id} exp={exp} iDidPay={iDidPay} share={share}
                     settled={settled} paidCount={paidCount} pendingCount={pendingCount}
@@ -2265,18 +2262,23 @@ function SplitzoDashboard({ userName, setActiveTab }) {
           </div>
         </div>
         <div className="panel">
-          <div className="panel-header"><h3 className="panel-title">⚖️ Recent Balances</h3><button onClick={() => setActiveTab("Balances")} style={{ fontSize:12, fontWeight:700, color:"#7c3aed", background:"none", border:"none", cursor:"pointer", fontFamily:"Outfit,sans-serif" }}>View all →</button></div>
+          <div className="panel-header"><h3 className="panel-title">⚡ Quick Stats</h3></div>
           <div style={{ padding:"12px 16px", display:"flex", flexDirection:"column", gap:10 }}>
-            {balances.length === 0
-              ? <div style={{ textAlign:"center", padding:"20px 0", color:"#8b72be", fontSize:13 }}>All settled up! 🎉</div>
-              : [...owedMe,...iOwe].slice(0,4).map(b => { const isOwe=b.from===userName; const p=isOwe?b.to:b.from; return (
-                <div key={b.id} style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 12px", background:"#faf9ff", borderRadius:12, border:"1.5px solid #e4e0ff" }}>
-                  <Av name={p} size={36}/>
-                  <div style={{ flex:1 }}><div style={{ fontWeight:800, fontSize:13, color:"#1a0a3c", fontFamily:"Outfit,sans-serif" }}>{p}</div><div style={{ fontSize:11, color:"#8b72be" }}>{isOwe?"you owe":"owes you"} · {b.groupName}</div></div>
-                  <div style={{ fontSize:15, fontWeight:900, color:isOwe?"#e11d48":"#16a34a", fontFamily:"Outfit,sans-serif" }}>{isOwe?"-":"+"}{fmtAmt(Number(b.amount))}</div>
+            {[
+              { icon:"📈", label:"Largest Split",     value: allExpenses.length ? fmtAmt(Math.max(...allExpenses.map(e=>Number(e.amount)))) : "—",  sub:"single expense",   color:"#7c3aed", bg:"#f5f0ff", bd:"#a855f7" },
+              { icon:"📊", label:"Avg Split Size",    value: allExpenses.length ? fmtAmt(Math.round(allExpenses.reduce((s,e)=>s+Number(e.amount),0)/allExpenses.length)) : "—", sub:"per expense", color:"#0891b2", bg:"#e0fffe", bd:"#22d3ee" },
+              { icon:"🏆", label:"Most Active Group", value: allExpenses.length ? (Object.entries(allExpenses.reduce((a,e)=>({...a,[e.groupName]:(a[e.groupName]||0)+1}),{})).sort((a,b)=>b[1]-a[1])[0]?.[0]||"—") : "—", sub:"by expense count", color:"#d97706", bg:"#fffbeb", bd:"#fbbf24" },
+              { icon:"✅", label:"Fully Settled",     value: allExpenses.length ? `${allExpenses.filter(e=>(e.settledBy||[]).length>=(e.members?.length||1)).length}/${allExpenses.length}` : "0/0", sub:"expenses closed", color:"#16a34a", bg:"#f0fff4", bd:"#4ade80" },
+            ].map((s,i) => (
+              <div key={i} style={{ display:"flex", alignItems:"center", gap:10, padding:"9px 12px", background:s.bg, borderRadius:10, border:`1.5px solid ${s.bd}` }}>
+                <div style={{ width:34, height:34, borderRadius:9, background:"rgba(255,255,255,0.6)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:17, flexShrink:0 }}>{s.icon}</div>
+                <div style={{ flex:1 }}>
+                  <div style={{ fontSize:9, fontWeight:800, color:s.color, letterSpacing:"0.08em", textTransform:"uppercase", fontFamily:"Outfit,sans-serif" }}>{s.label}</div>
+                  <div style={{ fontSize:15, fontWeight:900, color:"#1a0a3c", marginTop:1, fontFamily:"Outfit,sans-serif" }}>{s.value}</div>
                 </div>
-              ); })
-            }
+                <div style={{ fontSize:10, color:s.color, opacity:0.7, textAlign:"right", maxWidth:70, fontFamily:"Outfit,sans-serif" }}>{s.sub}</div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -2349,14 +2351,12 @@ function FriendsTab({ userName }) {
 
   const displayed = friends.filter(f => f.username.toLowerCase().includes(friendSearch.toLowerCase()));
 
-  const SmallCard = ({ icon, label, value, meta, bg, border, lc, ac }) => (
-    <div style={{ background:bg, border:`1.5px solid ${border}`, borderRadius:16, padding:"14px 16px", display:"flex", flexDirection:"column", gap:8 }}>
-      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-        <span style={{ fontSize:20 }}>{icon}</span>
-        <span style={{ fontSize:11, fontWeight:700, color:lc, background:`${border}33`, padding:"2px 8px", borderRadius:20 }}>{meta}</span>
-      </div>
-      <div style={{ fontSize:26, fontWeight:900, color:ac, letterSpacing:"-0.03em", fontFamily:"Outfit,sans-serif" }}>{value}</div>
-      <div style={{ fontSize:11, fontWeight:700, color:lc, fontFamily:"Outfit,sans-serif" }}>{label}</div>
+  const SmallCard = ({ icon, label, value, meta, from, to }) => (
+    <div style={{ background:`linear-gradient(135deg,${from},${to})`, borderRadius:16, padding:"14px 16px", display:"flex", flexDirection:"column", gap:6, boxShadow:"0 2px 12px rgba(0,0,0,0.10)" }}>
+      <div style={{ width:36, height:36, borderRadius:10, background:"rgba(255,255,255,0.25)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18 }}>{icon}</div>
+      <div style={{ fontSize:9, fontWeight:800, color:"rgba(255,255,255,0.7)", letterSpacing:"0.1em", textTransform:"uppercase", fontFamily:"Outfit,sans-serif" }}>{label}</div>
+      <div style={{ fontSize:26, fontWeight:900, color:"#fff", letterSpacing:"-0.03em", fontFamily:"Outfit,sans-serif", lineHeight:1 }}>{value}</div>
+      <div style={{ fontSize:10, color:"rgba(255,255,255,0.6)", fontFamily:"Outfit,sans-serif", fontWeight:600 }}>{meta}</div>
     </div>
   );
 
@@ -2366,9 +2366,9 @@ function FriendsTab({ userName }) {
 
       {/* STAT CARDS */}
       <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:12, marginBottom:20 }}>
-        <SmallCard icon="🤝" label="Total Friends"    value={friends.length}   meta="connected"         bg="linear-gradient(160deg,#f5f0ff,#e9d5ff)" border="#a855f7" lc="#7c3aed" ac="#4c1d95"/>
-        <SmallCard icon="📨" label="Pending Requests" value={requests.length}  meta="waiting for reply" bg="linear-gradient(160deg,#fffbeb,#fef9c3)" border="#fbbf24" lc="#d97706" ac="#92400e"/>
-        <SmallCard icon="👥" label="Shared Groups"    value={0}                meta="groups in common"  bg="linear-gradient(160deg,#e0fffe,#cffafe)"  border="#22d3ee" lc="#0891b2" ac="#164e63"/>
+        <SmallCard icon="🤝" label="Total Friends"    value={friends.length}   meta="connected"         from="#7c3aed" to="#a855f7"/>
+        <SmallCard icon="📨" label="Pending Requests" value={requests.length}  meta="waiting for reply" from="#d97706" to="#fbbf24"/>
+        <SmallCard icon="👥" label="Shared Groups"    value={0}                meta="groups in common"  from="#0891b2" to="#22d3ee"/>
       </div>
 
       {/* FIND FRIENDS — full width */}
@@ -2786,14 +2786,12 @@ function GroupsTab({ userName }) {
   const closedGroups = groups.filter(g => !(g.active !== false) && g.name.toLowerCase().includes(sr));
   const displayed    = view === "active" ? activeGroups : closedGroups;
 
-  const SmallCard = ({ icon, label, value, meta, bg, border, lc, ac }) => (
-    <div style={{ background:bg, border:`1.5px solid ${border}`, borderRadius:16, padding:"14px 16px", display:"flex", flexDirection:"column", gap:8 }}>
-      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-        <span style={{ fontSize:20 }}>{icon}</span>
-        <span style={{ fontSize:11, fontWeight:700, color:lc, background:`${border}33`, padding:"2px 8px", borderRadius:20 }}>{meta}</span>
-      </div>
-      <div style={{ fontSize:26, fontWeight:900, color:ac, letterSpacing:"-0.03em", fontFamily:"Outfit,sans-serif" }}>{value}</div>
-      <div style={{ fontSize:11, fontWeight:700, color:lc, fontFamily:"Outfit,sans-serif" }}>{label}</div>
+  const SmallCard = ({ icon, label, value, meta, from, to }) => (
+    <div style={{ background:`linear-gradient(135deg,${from},${to})`, borderRadius:16, padding:"14px 16px", display:"flex", flexDirection:"column", gap:6, boxShadow:"0 2px 12px rgba(0,0,0,0.10)" }}>
+      <div style={{ width:36, height:36, borderRadius:10, background:"rgba(255,255,255,0.25)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18 }}>{icon}</div>
+      <div style={{ fontSize:9, fontWeight:800, color:"rgba(255,255,255,0.7)", letterSpacing:"0.1em", textTransform:"uppercase", fontFamily:"Outfit,sans-serif" }}>{label}</div>
+      <div style={{ fontSize:26, fontWeight:900, color:"#fff", letterSpacing:"-0.03em", fontFamily:"Outfit,sans-serif", lineHeight:1 }}>{value}</div>
+      <div style={{ fontSize:10, color:"rgba(255,255,255,0.6)", fontFamily:"Outfit,sans-serif", fontWeight:600 }}>{meta}</div>
     </div>
   );
 
@@ -2838,9 +2836,9 @@ function GroupsTab({ userName }) {
   return (
     <div>
       <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:12, marginBottom:24 }}>
-        <SmallCard icon="🏘️" label="Total Groups"  value={groups.length}                              meta="you're part of"   bg="linear-gradient(160deg,#f5f0ff,#e9d5ff)" border="#a855f7" lc="#7c3aed" ac="#4c1d95"/>
-        <SmallCard icon="✅" label="Active Groups"  value={groups.filter(g=>g.active!==false).length} meta="currently running" bg="linear-gradient(160deg,#f0fdf4,#d1fae5)" border="#4ade80" lc="#16a34a" ac="#14532d"/>
-        <SmallCard icon="🔒" label="Closed Groups" value={groups.filter(g=>g.active===false).length} meta="deactivated"       bg="linear-gradient(160deg,#f9fafb,#f3f4f6)" border="#d1d5db" lc="#6b7280" ac="#374151"/>
+        <SmallCard icon="🏘️" label="Total Groups"  value={groups.length}                              meta="you're part of"   from="#6d28d9" to="#8b5cf6"/>
+        <SmallCard icon="✅" label="Active Groups"  value={groups.filter(g=>g.active!==false).length} meta="currently running" from="#15803d" to="#4ade80"/>
+        <SmallCard icon="🔒" label="Closed Groups" value={groups.filter(g=>g.active===false).length} meta="deactivated"       from="#374151" to="#9ca3af"/>
       </div>
 
       <div style={{ display:"flex", gap:12, marginBottom:16, alignItems:"center" }}>
