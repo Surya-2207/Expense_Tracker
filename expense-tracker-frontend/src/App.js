@@ -53,10 +53,10 @@ const MONTH_COLORS = ["#6d28d9", "#0891b2", "#db2777", "#d97706", "#059669", "#d
 // Compact Indian currency: 500→₹500, 15000→₹15K, 200000→₹2L, 15000000→₹1.5Cr
 const fmtAmt = (v) => {
   const n = Math.abs(Number(v) || 0);
-  if (n >= 1e7) return `₹${(n / 1e7).toFixed(n % 1e7 === 0 ? 0 : 1)}Cr`;
-  if (n >= 1e5) return `₹${(n / 1e5).toFixed(n % 1e5 === 0 ? 0 : 1)}L`;
-  if (n >= 1e3) return `₹${(n / 1e3).toFixed(n % 1e3 === 0 ? 0 : 1)}K`;
-  return `₹${n}`;
+  if (n >= 1e7) return `₹ ${(n / 1e7).toFixed(n % 1e7 === 0 ? 0 : 1)}Cr`;
+  if (n >= 1e5) return `₹ ${(n / 1e5).toFixed(n % 1e5 === 0 ? 0 : 1)}L`;
+  if (n >= 1e3) return `₹ ${(n / 1e3).toFixed(n % 1e3 === 0 ? 0 : 1)}K`;
+  return `₹ ${n}`;
 };
 
 /* ─── small reusable badge ───────────────────── */
@@ -1785,7 +1785,7 @@ function ProfileTab({ userName, setUserName, onLogout }) {
           {[
             { icon: "🗂️", label: "Account Type", val: "Personal" },
             { icon: "📅", label: "Member Since", val: "2024" },
-            { icon: "💸", label: "App", val: "SpendWise" },
+            { icon: "💸", label: "App", val: "TrackNSplit" },
           ].map(({ icon, label, val }) => (
             <div key={label} style={{
               display: "flex", alignItems: "center", justifyContent: "space-between",
@@ -1842,7 +1842,7 @@ function SettingsTab({ onLogout }) {
         <div className="panel-header"><h3 className="panel-title">⚙️ App Settings</h3></div>
         <div style={{ padding: "20px 24px", display: "flex", flexDirection: "column", gap: 14 }}>
           {[
-            { label: "App Name", val: "SpendWise", icon: "💸" },
+            { label: "App Name", val: "TrackNSplit", icon: "💸" },
             { label: "Currency", val: "INR (₹)", icon: "💰" },
             { label: "Backend API", val: "localhost:8081", icon: "🔌" },
           ].map(({ label, val, icon }) => (
@@ -2108,18 +2108,279 @@ function SplitzoDashboard({ userName, setActiveTab }) {
         </div>
         <div style={{ padding:"20px" }}>
           {dashTab === "overview" && (
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:10 }}>
-              <SmallCard icon="👥" label="Total Groups"    value={groups.length}  meta="you're part of" from="#6d28d9" to="#8b5cf6"/>
-              <SmallCard icon="🔀" label="Total Splits"    value={totalSplits}    meta="all groups"     from="#be123c" to="#fb7185"/>
-              <SmallCard icon="✅" label="Splits You Paid" value={splitsPaid}     meta="you covered"    from="#0369a1" to="#38bdf8"/>
-              <SmallCard icon="⏳" label="Pending Splits"  value={pendingSplits}  meta="you owe"        from="#b45309" to="#f59e0b"/>
+            <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
+              {/* stat cards */}
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:10 }}>
+                <SmallCard icon="👥" label="Total Groups"    value={groups.length}  meta="you're part of" from="#6d28d9" to="#8b5cf6"/>
+                <SmallCard icon="🔀" label="Total Splits"    value={totalSplits}    meta="all groups"     from="#be123c" to="#fb7185"/>
+                <SmallCard icon="✅" label="Splits You Paid" value={splitsPaid}     meta="you covered"    from="#0369a1" to="#38bdf8"/>
+                <SmallCard icon="⏳" label="Pending Splits"  value={pendingSplits}  meta="you owe"        from="#b45309" to="#f59e0b"/>
+              </div>
+
+              {/* friend requests */}
+              {requests.length > 0 && (
+                <div style={{ background:"#fff", border:"1.5px solid #e4e0ff", borderRadius:16, overflow:"hidden" }}>
+                  <div style={{ padding:"13px 18px", borderBottom:"1.5px solid #f0eeff", background:"#faf9ff" }}>
+                    <span style={{ fontSize:13, fontWeight:800, color:"#1a0a3c", fontFamily:"Outfit,sans-serif" }}>{`📨 Friend Requests · ${requests.length}`}</span>
+                  </div>
+                  <div style={{ padding:"12px 16px", display:"flex", flexDirection:"column", gap:8 }}>
+                    {requests.map(r => (
+                      <div key={r.id} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"11px 13px", background:"linear-gradient(135deg,#fffbeb,#fef9c3)", borderRadius:12, border:"1.5px solid #fde68a" }}>
+                        <div style={{ display:"flex", alignItems:"center", gap:12 }}><Av name={r.fromUsername} size={40}/><div><div style={{ fontWeight:800, color:"#1a0a3c", fontFamily:"Outfit,sans-serif", fontSize:14 }}>{r.fromUsername}</div><div style={{ fontSize:11, color:"#92400e" }}>wants to be friends</div></div></div>
+                        <div style={{ display:"flex", gap:8 }}>
+                          <button onClick={() => respondRequest(r.id,"accept")} style={{ padding:"6px 14px", borderRadius:8, border:"none", background:"#16a34a", color:"#fff", fontWeight:700, fontSize:12, cursor:"pointer" }}>✓ Accept</button>
+                          <button onClick={() => respondRequest(r.id,"reject")} style={{ padding:"6px 12px", borderRadius:8, border:"1.5px solid #fda4af", background:"#fff1f2", color:"#e11d48", fontWeight:700, fontSize:12, cursor:"pointer" }}>✕</button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* group activity + right column */}
+              <div style={{ display:"grid", gridTemplateColumns:"1.3fr 1fr", gap:14 }}>
+                {/* group activity — 4 items */}
+                <div style={{ background:"#fff", border:"1.5px solid #e4e0ff", borderRadius:16, overflow:"hidden" }}>
+                  <div style={{ padding:"13px 18px", borderBottom:"1.5px solid #f0eeff", background:"#faf9ff", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                    <span style={{ fontSize:13, fontWeight:800, color:"#1a0a3c", fontFamily:"Outfit,sans-serif" }}>💸 Group Activity</span>
+                    <button onClick={() => setActiveTab("Groups")} style={{ fontSize:12, fontWeight:700, color:"#7c3aed", background:"none", border:"none", cursor:"pointer", fontFamily:"Outfit,sans-serif" }}>View all →</button>
+                  </div>
+                  <div style={{ padding:"4px 0" }}>
+                    {allExpenses.length === 0
+                      ? <div style={{ textAlign:"center", padding:"28px 0", color:"#8b72be", fontSize:13 }}>No group activity yet</div>
+                      : allExpenses.slice(0,4).map((exp, i, arr) => {
+                          const iDidPay      = exp.paidBy === userName;
+                          const mc           = exp.members?.length || 1;
+                          const share        = Math.round(Number(exp.amount) / mc);
+                          const settled      = exp.settledBy || [exp.paidBy];
+                          const paidCount    = settled.length;
+                          const pendingCount = mc - paidCount;
+                          const dateStr      = exp.createdAt ? new Date(exp.createdAt).toLocaleDateString("en-IN",{day:"2-digit",month:"short"}) : "";
+                          return (
+                            <ActivityRow key={exp.id} exp={exp} iDidPay={iDidPay} share={share}
+                              settled={settled} paidCount={paidCount} pendingCount={pendingCount}
+                              dateStr={dateStr} isLast={i===arr.length-1} userName={userName}/>
+                          );
+                        })
+                    }
+                  </div>
+                </div>
+
+                {/* right column: active groups + quick stats */}
+                <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+                  {/* active groups */}
+                  <div style={{ background:"#fff", border:"1.5px solid #e4e0ff", borderRadius:16, overflow:"hidden" }}>
+                    <div style={{ padding:"13px 18px", borderBottom:"1.5px solid #f0eeff", background:"#faf9ff", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                      <span style={{ fontSize:13, fontWeight:800, color:"#1a0a3c", fontFamily:"Outfit,sans-serif" }}>🏘️ Active Groups</span>
+                      <button onClick={() => setActiveTab("Groups")} style={{ fontSize:12, fontWeight:700, color:"#7c3aed", background:"none", border:"none", cursor:"pointer", fontFamily:"Outfit,sans-serif" }}>View all →</button>
+                    </div>
+                    <div style={{ padding:"10px 14px", display:"flex", flexDirection:"column", gap:8 }}>
+                      {groups.filter(g => g.active !== false).length === 0
+                        ? <div style={{ textAlign:"center", padding:"16px 0", color:"#8b72be", fontSize:13 }}>No active groups yet</div>
+                        : groups.filter(g => g.active !== false).map(g => (
+                          <div key={g.id} style={{ display:"flex", alignItems:"center", gap:10, padding:"9px 11px", background:"#faf9ff", borderRadius:12, border:"1.5px solid #e4e0ff", cursor:"pointer" }}
+                            onMouseEnter={e => { e.currentTarget.style.background="#f5f0ff"; e.currentTarget.style.borderColor="#c4b5fd"; }}
+                            onMouseLeave={e => { e.currentTarget.style.background="#faf9ff"; e.currentTarget.style.borderColor="#e4e0ff"; }}>
+                            <div style={{ width:36, height:36, borderRadius:10, background:"linear-gradient(135deg,#f5f0ff,#e9d5ff)", border:"1.5px solid #ddd6fe", display:"flex", alignItems:"center", justifyContent:"center", fontSize:19, flexShrink:0 }}>{g.emoji||"🏘️"}</div>
+                            <div style={{ flex:1, minWidth:0 }}>
+                              <div style={{ fontWeight:800, fontSize:12, color:"#1a0a3c", fontFamily:"Outfit,sans-serif", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{g.name}</div>
+                              <div style={{ fontSize:10, color:"#8b72be", marginTop:1 }}>{(g.members||[]).length} members</div>
+                            </div>
+                            <div style={{ display:"flex", alignItems:"center", gap:6, flexShrink:0 }}>
+                              <div style={{ display:"flex" }}>{(g.members||[]).slice(0,3).map((m,j) => <div key={m} style={{ width:20, height:20, borderRadius:"50%", background:`linear-gradient(135deg,${SP_COL[j%7]}44,${SP_COL[j%7]}88)`, border:"2px solid #fff", marginLeft:j>0?-6:0, display:"flex", alignItems:"center", justifyContent:"center", fontSize:8, fontWeight:900, color:SP_COL[j%7] }}>{m[0].toUpperCase()}</div>)}</div>
+                              <span style={{ fontSize:9, fontWeight:800, padding:"2px 6px", borderRadius:20, background:"linear-gradient(135deg,#f5f0ff,#e9d5ff)", color:"#7c3aed", border:"1.5px solid #ddd6fe", fontFamily:"Outfit,sans-serif" }}>{g.inviteCode}</span>
+                            </div>
+                          </div>
+                        ))
+                      }
+                    </div>
+                  </div>
+
+                  {/* quick stats */}
+                  <div style={{ background:"#fff", border:"1.5px solid #e4e0ff", borderRadius:16, overflow:"hidden" }}>
+                    <div style={{ padding:"13px 18px", borderBottom:"1.5px solid #f0eeff", background:"#faf9ff" }}>
+                      <span style={{ fontSize:13, fontWeight:800, color:"#1a0a3c", fontFamily:"Outfit,sans-serif" }}>⚡ Quick Stats</span>
+                    </div>
+                    <div style={{ padding:"10px 14px", display:"flex", flexDirection:"column", gap:8 }}>
+                      {[
+                        { icon:"📈", label:"Largest Split",     value: allExpenses.length ? fmtAmt(Math.max(...allExpenses.map(e=>Number(e.amount)))) : "—",  sub:"single expense",   color:"#7c3aed", bg:"#f5f0ff", bd:"#a855f7" },
+                        { icon:"📊", label:"Avg Split Size",    value: allExpenses.length ? fmtAmt(Math.round(allExpenses.reduce((s,e)=>s+Number(e.amount),0)/allExpenses.length)) : "—", sub:"per expense", color:"#0891b2", bg:"#e0fffe", bd:"#22d3ee" },
+                        { icon:"🏆", label:"Most Active Group", value: allExpenses.length ? (Object.entries(allExpenses.reduce((a,e)=>({...a,[e.groupName]:(a[e.groupName]||0)+1}),{})).sort((a,b)=>b[1]-a[1])[0]?.[0]||"—") : "—", sub:"by expense count", color:"#d97706", bg:"#fffbeb", bd:"#fbbf24" },
+                        { icon:"✅", label:"Fully Settled",     value: allExpenses.length ? `${allExpenses.filter(e=>(e.settledBy||[]).length>=(e.members?.length||1)).length} / ${allExpenses.length}` : "0 / 0", sub:"expenses closed", color:"#16a34a", bg:"#f0fff4", bd:"#4ade80" },
+                      ].map((s,i) => (
+                        <div key={i} style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 10px", background:s.bg, borderRadius:10, border:`1.5px solid ${s.bd}` }}>
+                          <div style={{ width:30, height:30, borderRadius:8, background:"rgba(255,255,255,0.6)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:15, flexShrink:0 }}>{s.icon}</div>
+                          <div style={{ flex:1 }}>
+                            <div style={{ fontSize:8, fontWeight:800, color:s.color, letterSpacing:"0.08em", textTransform:"uppercase", fontFamily:"Outfit,sans-serif" }}>{s.label}</div>
+                            <div style={{ fontSize:13, fontWeight:900, color:"#1a0a3c", marginTop:1, fontFamily:"Outfit,sans-serif" }}>{s.value}</div>
+                          </div>
+                          <div style={{ fontSize:9, color:s.color, opacity:0.7, textAlign:"right", maxWidth:60, fontFamily:"Outfit,sans-serif" }}>{s.sub}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
           {dashTab === "balance" && (
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10 }}>
-              <SmallCard big icon="💰" label="Total Group Spend" value={fmtAmt(allExpenses.reduce((s,e)=>s+Number(e.amount),0))} meta={`${allExpenses.length} expenses`} from="#3730a3" to="#818cf8"/>
-              <SmallCard big icon="📥" label="Owed to You"       value={fmtAmt(owedMe.reduce((s,b)=>s+Number(b.amount),0))}     meta="others owe you"                   from="#065f46" to="#6ee7b7"/>
-              <SmallCard big icon="📤" label="You Owe"           value={fmtAmt(iOwe.reduce((s,b)=>s+Number(b.amount),0))}       meta="your pending dues"                from="#9a3412" to="#fdba74"/>
+            <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
+              {/* 3 big cards — overall all-time */}
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10 }}>
+                <SmallCard big icon="💰" label="Total Group Spend" value={fmtAmt(allExpenses.reduce((s,e)=>s+Number(e.amount),0))} meta={`${allExpenses.length} expenses · all time`} from="#3730a3" to="#818cf8"/>
+                <SmallCard big icon="📥" label="Owed to You"       value={fmtAmt(owedMe.reduce((s,b)=>s+Number(b.amount),0))}     meta="overall · all groups"                    from="#065f46" to="#6ee7b7"/>
+                <SmallCard big icon="📤" label="You Owe"           value={fmtAmt(iOwe.reduce((s,b)=>s+Number(b.amount),0))}       meta="overall · all groups"                    from="#9a3412" to="#fdba74"/>
+              </div>
+
+              {/* net balance per friend + group spend breakdown */}
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
+                {/* net balance per friend */}
+                <div className="panel">
+                  <div className="panel-header">
+                    <h3 className="panel-title">👥 Net Balance by Friend</h3>
+                  </div>
+                  <div style={{ padding:"12px 16px", display:"flex", flexDirection:"column", gap:8 }}>
+                    {[...owedMe.map(b=>({...b, type:"owed"})), ...iOwe.map(b=>({...b, type:"owe"}))].length === 0
+                      ? <div style={{ textAlign:"center", padding:"20px 0", color:"#8b72be", fontSize:13 }}>All settled up! 🎉</div>
+                      : [...owedMe.map(b=>({...b, type:"owed"})), ...iOwe.map(b=>({...b, type:"owe"}))].map((b,i) => {
+                          const isOwe = b.type === "owe";
+                          const person = isOwe ? b.to : b.from;
+                          return (
+                            <div key={i} style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 12px", background:isOwe?"#fff7f0":"#f0fdf4", borderRadius:12, border:`1.5px solid ${isOwe?"#fed7aa":"#86efac"}` }}>
+                              <Av name={person} size={36}/>
+                              <div style={{ flex:1 }}>
+                                <div style={{ fontSize:13, fontWeight:700, color:"#1a0a3c", fontFamily:"Outfit,sans-serif" }}>{person}</div>
+                                <div style={{ fontSize:11, color:"#8b72be" }}>{isOwe ? "you owe" : "owes you"} · {b.groupName}</div>
+                              </div>
+                              <div style={{ textAlign:"right" }}>
+                                <div style={{ fontSize:15, fontWeight:900, color:isOwe?"#e11d48":"#16a34a", fontFamily:"Outfit,sans-serif" }}>{isOwe ? "- " : "+ "}{fmtAmt(Number(b.amount))}</div>
+                                <button style={{ fontSize:9, fontWeight:700, padding:"2px 8px", borderRadius:20, background:isOwe?"#fef3c7":"#dcfce7", border:`1px solid ${isOwe?"#fcd34d":"#86efac"}`, color:isOwe?"#b45309":"#15803d", cursor:"pointer", marginTop:2 }}>{isOwe ? "Settle" : "Remind"}</button>
+                              </div>
+                            </div>
+                          );
+                        })
+                    }
+                  </div>
+                </div>
+
+                {/* group spend breakdown */}
+                <div className="panel">
+                  <div className="panel-header">
+                    <h3 className="panel-title">📊 Group Spend Breakdown</h3>
+                  </div>
+                  <div style={{ padding:"12px 16px", display:"flex", flexDirection:"column", gap:14 }}>
+                    {(() => {
+                      const grpTotals = groups.map((g,i) => {
+                        const exps = allExpenses.filter(e=>e.groupName===g.name);
+                        const total = exps.reduce((s,e)=>s+Number(e.amount),0);
+                        const myS   = exps.reduce((s,e)=>s+Number(e.amount)/(e.members?.length||1),0);
+                        const settled = exps.filter(e=>(e.settledBy||[]).length>=(e.members?.length||1)).length;
+                        const SP_COL = ["#7c3aed","#ec4899","#06b6d4","#f97316","#16a34a","#f59e0b","#3b82f6"];
+                        return { name:g.name, total, myShare:myS, count:exps.length, settled, pending:exps.length-settled, color:SP_COL[i%7] };
+                      });
+                      const grand = grpTotals.reduce((s,g)=>s+g.total,0);
+                      return grpTotals.map(g => {
+                        const pct  = grand>0 ? Math.round(g.total/grand*100) : 0;
+                        const rate = g.count>0 ? Math.round(g.settled/g.count*100) : 0;
+                        return (
+                          <div key={g.name}>
+                            <div style={{ display:"flex", justifyContent:"space-between", marginBottom:5 }}>
+                              <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                                <div style={{ width:9, height:9, borderRadius:3, background:g.color }}/>
+                                <span style={{ fontSize:13, fontWeight:700, color:"#1a0a3c", fontFamily:"Outfit,sans-serif" }}>{g.name}</span>
+                              </div>
+                              <span style={{ fontSize:14, fontWeight:900, color:g.color, fontFamily:"Outfit,sans-serif" }}>{fmtAmt(g.total)}</span>
+                            </div>
+                            <div style={{ height:7, background:"#f0eeff", borderRadius:99, overflow:"hidden", marginBottom:2 }}>
+                              <div style={{ height:"100%", width:`${pct}%`, background:g.color, borderRadius:99 }}/>
+                            </div>
+                            <div style={{ height:4, background:"#f0eeff", borderRadius:99, overflow:"hidden", marginBottom:3 }}>
+                              <div style={{ height:"100%", width:`${grand>0?Math.round(g.myShare/grand*100):0}%`, background:`${g.color}66`, borderRadius:99 }}/>
+                            </div>
+                            <div style={{ display:"flex", justifyContent:"space-between", fontSize:10, color:"#8b72be" }}>
+                              <span>{g.count} expenses · {pct}% of total · share {fmtAmt(Math.round(g.myShare))}</span>
+                              <span style={{ color:rate===100?"#16a34a":"#f97316", fontWeight:700 }}>{rate}% settled</span>
+                            </div>
+                          </div>
+                        );
+                      });
+                    })()}
+                  </div>
+                </div>
+              </div>
+
+              {/* smart settle up + friend spend comparison */}
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1.2fr", gap:14 }}>
+                {/* smart settle */}
+                <div className="panel">
+                  <div className="panel-header">
+                    <h3 className="panel-title">💡 Smart Settle Up</h3>
+                  </div>
+                  <div style={{ padding:"12px 16px" }}>
+                    <div style={{ marginBottom:12, fontSize:11, color:"#6d28d9", background:"#f5f0ff", border:"1.5px solid #ddd6fe", borderRadius:10, padding:"8px 12px" }}>
+                      Minimum payments needed to clear all your debts
+                    </div>
+                    <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                      {iOwe.length === 0
+                        ? <div style={{ textAlign:"center", padding:"20px 0", color:"#8b72be", fontSize:13 }}>Nothing to settle 🎉</div>
+                        : iOwe.map((b,i) => (
+                          <div key={i} style={{ display:"flex", alignItems:"center", gap:10, padding:"11px 14px", background:"linear-gradient(135deg,#fff7f0,#fef3c7)", borderRadius:12, border:"1.5px solid #fde68a" }}>
+                            <Av name={userName} size={28}/>
+                            <span style={{ fontSize:16, color:"#8b72be" }}>→</span>
+                            <Av name={b.to} size={28}/>
+                            <div style={{ flex:1, marginLeft:4 }}>
+                              <div style={{ fontSize:12, fontWeight:700, color:"#1a0a3c", fontFamily:"Outfit,sans-serif" }}>Pay <strong style={{ color:"#7c3aed" }}>{b.to}</strong></div>
+                              <div style={{ fontSize:10, color:"#8b72be" }}>{b.groupName}</div>
+                            </div>
+                            <div style={{ textAlign:"right" }}>
+                              <div style={{ fontSize:14, fontWeight:900, color:"#e11d48", fontFamily:"Outfit,sans-serif" }}>- {fmtAmt(Number(b.amount))}</div>
+                              <button style={{ fontSize:9, fontWeight:700, padding:"2px 8px", borderRadius:20, background:"#16a34a", border:"none", color:"#fff", cursor:"pointer", marginTop:2 }}>Pay Now</button>
+                            </div>
+                          </div>
+                        ))
+                      }
+                    </div>
+                  </div>
+                </div>
+
+                {/* friend spend vs your share */}
+                <div className="panel">
+                  <div className="panel-header">
+                    <h3 className="panel-title">🤝 Friend Spend vs Your Share</h3>
+                  </div>
+                  <div style={{ padding:"12px 16px" }}>
+                    {(() => {
+                      const SP_COL = ["#7c3aed","#ec4899","#06b6d4","#f97316","#16a34a","#f59e0b","#3b82f6"];
+                      const fd = [...(friends||[]),"you"].map((f,i)=>({
+                        name:f==="you"?"You":f, color:SP_COL[i%7],
+                        paid:allExpenses.filter(e=>e.paidBy===f).reduce((s,e)=>s+Number(e.amount),0),
+                        share:allExpenses.filter(e=>(e.members||[]).includes(f)).reduce((s,e)=>s+Number(e.amount)/(e.members?.length||1),0),
+                      })).filter(d=>d.paid>0||d.share>0).sort((a,b)=>b.paid-a.paid);
+                      const maxPaid = fd.length>0 ? fd[0].paid : 1;
+                      return fd.map((f,i)=>(
+                        <div key={f.name} style={{ marginBottom:12 }}>
+                          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:4 }}>
+                            <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                              <div style={{ width:26, height:26, borderRadius:"50%", background:`${f.color}20`, border:`1.5px solid ${f.color}44`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, fontWeight:900, color:f.color, flexShrink:0 }}>{f.name[0]}</div>
+                              <span style={{ fontSize:12, fontWeight:700, color:"#1a0a3c", fontFamily:"Outfit,sans-serif" }}>{f.name}</span>
+                            </div>
+                            <div style={{ textAlign:"right" }}>
+                              <span style={{ fontSize:12, fontWeight:900, color:f.color, fontFamily:"Outfit,sans-serif" }}>{fmtAmt(f.paid)}</span>
+                              <span style={{ fontSize:10, color:"#8b72be", marginLeft:6 }}>share {fmtAmt(Math.round(f.share))}</span>
+                            </div>
+                          </div>
+                          <div style={{ height:5, background:"#f0eeff", borderRadius:99, overflow:"hidden", marginBottom:2 }}>
+                            <div style={{ height:"100%", width:`${Math.round(f.paid/maxPaid*100)}%`, background:f.color, borderRadius:99 }}/>
+                          </div>
+                          <div style={{ height:3, background:"#f0eeff", borderRadius:99, overflow:"hidden" }}>
+                            <div style={{ height:"100%", width:`${Math.round(f.share/maxPaid*100)}%`, background:`${f.color}66`, borderRadius:99 }}/>
+                          </div>
+                        </div>
+                      ));
+                    })()}
+                  </div>
+                </div>
+              </div>
             </div>
           )}
           {dashTab === "activity" && (() => {
@@ -2129,14 +2390,148 @@ function SplitzoDashboard({ userName, setActiveTab }) {
             const yrMyShare = yrExps.reduce((s,e) => s + Number(e.amount)/(e.members?.length||1), 0);
             const mnPaid    = mnExps.filter(e => e.paidBy === userName).length;
             const mnPending = mnExps.filter(e => { const mc=e.members?.length||1; return (e.settledBy||[e.paidBy]).length < mc; }).length;
+            const SP_COL2   = ["#7c3aed","#ec4899","#06b6d4","#f97316","#16a34a","#f59e0b","#3b82f6"];
+
+            // monthly data for trend chart
+            const trendData = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"].map((m,i)=>{
+              const e=allExpenses.filter(x=>new Date(x.createdAt||0).getMonth()===i&&new Date(x.createdAt||0).getFullYear()===bsYear);
+              return {month:m,total:e.reduce((s,x)=>s+Number(x.amount),0),share:e.reduce((s,x)=>s+Number(x.amount)/(x.members?.length||1),0)};
+            }).filter(d=>d.total>0);
+
+            // friend leaderboard
+            const fdPaid = [...(friends||[]),"you"].map((f,i)=>({
+              name:f==="you"?"You":f, color:SP_COL2[i%7],
+              paid:allExpenses.filter(e=>e.paidBy===f).reduce((s,e)=>s+Number(e.amount),0),
+            })).filter(d=>d.paid>0).sort((a,b)=>b.paid-a.paid);
+            const maxPaid = fdPaid.length>0 ? fdPaid[0].paid : 1;
+            const medals = ["🥇","🥈","🥉"];
+
             return (
-              <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+              <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
+                {/* 5 stat pills */}
                 <div style={{ display:"grid", gridTemplateColumns:"repeat(5,1fr)", gap:10 }}>
                   <SmallCard icon="💰" label={`${bsYear} Splits`}     value={yrExps.length}    meta={fmtAmt(yrExps.reduce((s,e)=>s+Number(e.amount),0))} from="#a21caf" to="#e879f9"/>
                   <SmallCard icon="🙋" label={`${bsYear} Your Share`} value={fmtAmt(yrMyShare)} meta="your portion"                                        from="#1d4ed8" to="#60a5fa"/>
                   <SmallCard icon="🗂️" label={`${mnFull} Splits`}    value={mnExps.length}    meta={fmtAmt(mnExps.reduce((s,e)=>s+Number(e.amount),0))}  from="#065f46" to="#34d399"/>
                   <SmallCard icon="✅" label={`${mnFull} Paid`}       value={mnPaid}           meta="you covered"                                          from="#92400e" to="#fbbf24"/>
                   <SmallCard icon="⏳" label={`${mnFull} Pending`}    value={mnPending}        meta="unsettled"                                            from="#9f1239" to="#f43f5e"/>
+                </div>
+
+                {/* who owes who + monthly trend */}
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
+                  {/* who owes who */}
+                  <div className="panel">
+                    <div className="panel-header"><h3 className="panel-title">🔄 Who Owes Who</h3></div>
+                    <div style={{ padding:"12px 16px", display:"flex", flexDirection:"column", gap:7 }}>
+                      {[...owedMe.map(b=>({...b,type:"owed"})),...iOwe.map(b=>({...b,type:"owe"}))].length===0
+                        ? <div style={{ textAlign:"center", padding:"20px 0", color:"#8b72be", fontSize:13 }}>All settled! 🎉</div>
+                        : [...owedMe.map(b=>({...b,type:"owed"})),...iOwe.map(b=>({...b,type:"owe"}))].map((b,i)=>{
+                          const isOwe=b.type==="owe"; const person=isOwe?b.to:b.from;
+                          return (
+                            <div key={i} style={{ display:"flex", alignItems:"center", gap:10, padding:"9px 12px", background:isOwe?"#fff7f0":"#f0fdf4", borderRadius:11, border:`1.5px solid ${isOwe?"#fed7aa":"#86efac"}` }}>
+                              <Av name={person} size={32}/>
+                              <div style={{ flex:1 }}>
+                                <div style={{ fontSize:12, fontWeight:700, color:"#1a0a3c", fontFamily:"Outfit,sans-serif" }}>{person}</div>
+                                <div style={{ fontSize:10, color:"#8b72be" }}>{isOwe?"you owe":"owes you"} · {b.groupName}</div>
+                              </div>
+                              <div style={{ textAlign:"right" }}>
+                                <div style={{ fontSize:14, fontWeight:900, color:isOwe?"#e11d48":"#16a34a", fontFamily:"Outfit,sans-serif" }}>{isOwe?"- ":"+ "}{fmtAmt(Number(b.amount))}</div>
+                                <button style={{ fontSize:9, fontWeight:700, padding:"2px 8px", borderRadius:20, background:isOwe?"#fef3c7":"#dcfce7", border:`1px solid ${isOwe?"#fcd34d":"#86efac"}`, color:isOwe?"#b45309":"#15803d", cursor:"pointer", marginTop:2 }}>{isOwe?"Settle":"Remind"}</button>
+                              </div>
+                            </div>
+                          );
+                        })
+                      }
+                    </div>
+                  </div>
+
+                  {/* monthly trend */}
+                  <div className="panel">
+                    <div className="panel-header">
+                      <h3 className="panel-title">📈 Monthly Trend · {bsYear}</h3>
+                    </div>
+                    <div style={{ padding:"12px 16px" }}>
+                      {trendData.length === 0
+                        ? <div style={{ textAlign:"center", padding:"20px 0", color:"#8b72be", fontSize:13 }}>No data for {bsYear}</div>
+                        : (
+                          <ResponsiveContainer width="100%" height={160}>
+                            <AreaChart data={trendData} margin={{top:4,right:8,left:0,bottom:0}}>
+                              <defs>
+                                <linearGradient id="tg1" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#7c3aed" stopOpacity={0.25}/><stop offset="95%" stopColor="#7c3aed" stopOpacity={0}/></linearGradient>
+                                <linearGradient id="tg2" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#ec4899" stopOpacity={0.2}/><stop offset="95%" stopColor="#ec4899" stopOpacity={0}/></linearGradient>
+                              </defs>
+                              <CartesianGrid strokeDasharray="3 3" stroke="#f0eeff" vertical={false}/>
+                              <XAxis dataKey="month" tick={{fontSize:11,fill:"#8b72be",fontFamily:"Outfit,sans-serif"}} axisLine={false} tickLine={false}/>
+                              <YAxis tick={{fontSize:10,fill:"#b39ddb"}} axisLine={false} tickLine={false} tickFormatter={v=>fmtAmt(v)} width={44}/>
+                              <Tooltip formatter={v=>[fmtAmt(v)]} contentStyle={{borderRadius:10,border:"1.5px solid #e4e0ff",fontSize:12,fontFamily:"Outfit,sans-serif"}}/>
+                              <Legend wrapperStyle={{fontSize:11,fontFamily:"Outfit,sans-serif"}}/>
+                              <Area type="monotone" dataKey="total" name="Group Total" stroke="#7c3aed" strokeWidth={2.5} fill="url(#tg1)" dot={{r:4,fill:"#7c3aed",stroke:"#fff",strokeWidth:2}}/>
+                              <Area type="monotone" dataKey="share" name="Your Share"  stroke="#ec4899" strokeWidth={2} fill="url(#tg2)" strokeDasharray="5 3" dot={{r:3,fill:"#ec4899"}}/>
+                            </AreaChart>
+                          </ResponsiveContainer>
+                        )
+                      }
+                    </div>
+                  </div>
+                </div>
+
+                {/* pending settlements */}
+                <div className="panel">
+                  <div className="panel-header"><h3 className="panel-title">⏳ Pending Settlements</h3></div>
+                  <div style={{ padding:"12px 16px" }}>
+                    {allExpenses.filter(e=>(e.settledBy||[]).length<(e.members?.length||1)).length===0
+                      ? <div style={{ textAlign:"center", padding:"20px 0", color:"#8b72be", fontSize:13 }}>All expenses settled! 🎉</div>
+                      : <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                          {allExpenses.filter(e=>(e.settledBy||[]).length<(e.members?.length||1)).slice(0,5).map((exp,i)=>{
+                            const mc=exp.members?.length||1;
+                            const share=Math.round(Number(exp.amount)/mc);
+                            const pendingM=exp.members.filter(m=>!(exp.settledBy||[]).includes(m));
+                            return (
+                              <div key={exp.id} style={{ padding:"10px 12px", background:"#fff7f0", borderRadius:11, border:"1.5px solid #fed7aa" }}>
+                                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:6 }}>
+                                  <div>
+                                    <div style={{ fontSize:12, fontWeight:700, color:"#1a0a3c", fontFamily:"Outfit,sans-serif" }}>{exp.description} <span style={{ fontSize:10, color:"#a78bfa" }}>· {exp.groupName}</span></div>
+                                    <div style={{ fontSize:10, color:"#8b72be", marginTop:2 }}>₹ {share}/person · paid by {exp.paidBy===userName?"you":exp.paidBy}</div>
+                                  </div>
+                                  <div style={{ fontSize:13, fontWeight:900, color:"#7c3aed", fontFamily:"Outfit,sans-serif" }}>{fmtAmt(Number(exp.amount))}</div>
+                                </div>
+                                <div style={{ display:"flex", gap:4, flexWrap:"wrap" }}>
+                                  {pendingM.map(m=>(
+                                    <div key={m} style={{ display:"flex", alignItems:"center", gap:4, padding:"2px 8px", background:"#fef3c7", borderRadius:20, border:"1px solid #fcd34d" }}>
+                                      <div style={{ width:14, height:14, borderRadius:"50%", background:`${SP_COL2[m.charCodeAt(0)%7]}22`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:7, fontWeight:900, color:SP_COL2[m.charCodeAt(0)%7] }}>{m[0].toUpperCase()}</div>
+                                      <span style={{ fontSize:9, fontWeight:700, color:"#92400e" }}>{m==="you"?"you":m}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                    }
+                  </div>
+                </div>
+
+                {/* who paid leaderboard */}
+                <div className="panel">
+                  <div className="panel-header"><h3 className="panel-title">🏆 Who Paid the Most</h3></div>
+                  <div style={{ padding:"12px 16px" }}>
+                    <div style={{ display:"grid", gridTemplateColumns:`repeat(${Math.min(fdPaid.length,5)},1fr)`, gap:10 }}>
+                      {fdPaid.slice(0,5).map((f,i)=>{
+                        const pct=Math.round(f.paid/maxPaid*100);
+                        return (
+                          <div key={f.name} style={{ background:i===0?"linear-gradient(135deg,#fef9c3,#fef08a)":"#faf9ff", border:`1.5px solid ${i===0?"#fcd34d":"#e4e0ff"}`, borderRadius:14, padding:"14px 12px", textAlign:"center" }}>
+                            <div style={{ fontSize:22, marginBottom:6 }}>{medals[i]||`${i+1}`}</div>
+                            <div style={{ width:38, height:38, borderRadius:"50%", background:`${f.color}20`, border:`2px solid ${f.color}40`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, fontWeight:900, color:f.color, margin:"0 auto 8px", fontFamily:"Outfit,sans-serif" }}>{f.name[0]}</div>
+                            <div style={{ fontSize:12, fontWeight:700, color:"#1a0a3c", fontFamily:"Outfit,sans-serif" }}>{f.name}</div>
+                            <div style={{ fontSize:16, fontWeight:900, color:f.color, letterSpacing:"-0.02em", marginTop:2, fontFamily:"Outfit,sans-serif" }}>{fmtAmt(f.paid)}</div>
+                            <div style={{ height:3, background:"#f0eeff", borderRadius:99, overflow:"hidden", marginTop:8 }}>
+                              <div style={{ height:"100%", width:`${pct}%`, background:f.color, borderRadius:99 }}/>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
                 </div>
               </div>
             );
@@ -2149,7 +2544,8 @@ function SplitzoDashboard({ userName, setActiveTab }) {
         <div className="panel" style={{ marginBottom:20 }}>
           <div className="panel-header">
             <h3 className="panel-title">⚖️ Balance Split</h3>
-            <div style={{ display:"flex", gap:8 }}>
+            <div style={{ display:"flex", gap:8, alignItems:"center" }}>
+              <span style={{ fontSize:11, color:"#8b72be", fontFamily:"Outfit,sans-serif" }}>Showing totals for</span>
               <MonthPicker value={bsMonth} onChange={v => setBsMonth(Number(v))}/>
               <YearPicker  value={bsYear}  onChange={y => setBsYear(y)}/>
             </div>
@@ -2172,15 +2568,15 @@ function SplitzoDashboard({ userName, setActiveTab }) {
             </div>
             <div style={{ flex:1, display:"flex", flexDirection:"column", gap:0 }}>
               {[
-                { dot:"#16a34a", label:"Owed to You", sub:"people owe you",  val:fmtAmt(bsOwd), color:"#16a34a" },
-                { dot:"#f97316", label:"You Owe",     sub:"you owe others",  val:fmtAmt(bsOwe), color:"#f97316" },
+                { dot:"#16a34a", label:"Owed to You", sub:`total across all groups · ${new Date(bsYear,bsMonth-1,1).toLocaleString("default",{month:"long"})} ${bsYear}`, val:fmtAmt(bsOwd), color:"#16a34a" },
+                { dot:"#f97316", label:"You Owe",     sub:`total across all groups · ${new Date(bsYear,bsMonth-1,1).toLocaleString("default",{month:"long"})} ${bsYear}`, val:fmtAmt(bsOwe), color:"#f97316" },
               ].map((row, i, arr) => (
                 <div key={row.label} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"18px 0", borderBottom:i<arr.length-1?"1px solid #f0eeff":"none" }}>
                   <div style={{ display:"flex", alignItems:"center", gap:12 }}>
                     <div style={{ width:11, height:11, borderRadius:"50%", background:row.dot, flexShrink:0 }}/>
                     <div>
                       <div style={{ fontWeight:800, fontSize:14, color:"#1a0a3c", fontFamily:"Outfit,sans-serif" }}>{row.label}</div>
-                      <div style={{ fontSize:12, color:"#8b72be", marginTop:1, fontFamily:"Outfit,sans-serif" }}>{row.sub}</div>
+                      <div style={{ fontSize:11, color:"#8b72be", marginTop:1, fontFamily:"Outfit,sans-serif" }}>{row.sub}</div>
                     </div>
                   </div>
                   <div style={{ fontSize:20, fontWeight:900, color:row.color, fontFamily:"Outfit,sans-serif", letterSpacing:"-0.02em" }}>{row.val}</div>
@@ -2191,97 +2587,6 @@ function SplitzoDashboard({ userName, setActiveTab }) {
         </div>
       )}
 
-      {/* FRIEND REQUESTS — above group activity */}
-      {requests.length > 0 && (
-        <div className="panel" style={{ marginBottom:16 }}>
-          <div className="panel-header"><h3 className="panel-title">{`📨 Friend Requests · ${requests.length}`}</h3></div>
-          <div style={{ padding:"12px 16px", display:"flex", flexDirection:"column", gap:10 }}>
-            {requests.map(r => (
-              <div key={r.id} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"12px 14px", background:"linear-gradient(135deg,#fffbeb,#fef9c3)", borderRadius:12, border:"1.5px solid #fde68a" }}>
-                <div style={{ display:"flex", alignItems:"center", gap:12 }}><Av name={r.fromUsername} size={40}/><div><div style={{ fontWeight:800, color:"#1a0a3c", fontFamily:"Outfit,sans-serif", fontSize:14 }}>{r.fromUsername}</div><div style={{ fontSize:11, color:"#92400e" }}>wants to be friends</div></div></div>
-                <div style={{ display:"flex", gap:8 }}>
-                  <button onClick={() => respondRequest(r.id,"accept")} style={{ padding:"6px 14px", borderRadius:8, border:"none", background:"#16a34a", color:"#fff", fontWeight:700, fontSize:12, cursor:"pointer" }}>✓ Accept</button>
-                  <button onClick={() => respondRequest(r.id,"reject")} style={{ padding:"6px 12px", borderRadius:8, border:"1.5px solid #fda4af", background:"#fff1f2", color:"#e11d48", fontWeight:700, fontSize:12, cursor:"pointer" }}>✕</button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* GROUP ACTIVITY FEED */}
-      <div className="panel" style={{ marginBottom:16 }}>
-        <div className="panel-header">
-          <h3 className="panel-title">💸 Group Activity</h3>
-          <button onClick={() => setActiveTab("Groups")} style={{ fontSize:12, fontWeight:700, color:"#7c3aed", background:"none", border:"none", cursor:"pointer", fontFamily:"Outfit,sans-serif" }}>View all →</button>
-        </div>
-        {allExpenses.length === 0
-          ? <div style={{ textAlign:"center", padding:"28px 0", color:"#8b72be", fontSize:13 }}>No group activity yet</div>
-          : <div>
-              {allExpenses.slice(0,8).map((exp, i, arr) => {
-                const iDidPay      = exp.paidBy === userName;
-                const mc           = exp.members?.length || 1;
-                const share        = Math.round(Number(exp.amount) / mc);
-                const settled      = exp.settledBy || [exp.paidBy];
-                const paidCount    = settled.length;
-                const pendingCount = mc - paidCount;
-                const dateStr      = exp.createdAt ? new Date(exp.createdAt).toLocaleDateString("en-IN",{day:"2-digit",month:"short"}) : "";
-                return (
-                  <ActivityRow key={exp.id} exp={exp} iDidPay={iDidPay} share={share}
-                    settled={settled} paidCount={paidCount} pendingCount={pendingCount}
-                    dateStr={dateStr} isLast={i===arr.length-1} userName={userName}/>
-                );
-              })}
-            </div>
-        }
-      </div>
-
-      {/* BOTTOM ROW */}
-      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
-        <div className="panel">
-          <div className="panel-header"><h3 className="panel-title">🏘️ Active Groups</h3><button onClick={() => setActiveTab("Groups")} style={{ fontSize:12, fontWeight:700, color:"#7c3aed", background:"none", border:"none", cursor:"pointer", fontFamily:"Outfit,sans-serif" }}>View all →</button></div>
-          <div style={{ padding:"12px 16px", display:"flex", flexDirection:"column", gap:10 }}>
-            {groups.filter(g => g.active !== false).length === 0
-              ? <div style={{ textAlign:"center", padding:"20px 0", color:"#8b72be", fontSize:13 }}>No active groups yet</div>
-              : groups.filter(g => g.active !== false).map(g => (
-                <div key={g.id} style={{ display:"flex", alignItems:"center", gap:12, padding:"11px 13px", background:"#faf9ff", borderRadius:12, border:"1.5px solid #e4e0ff", cursor:"pointer", transition:"all 0.15s" }}
-                  onMouseEnter={e => { e.currentTarget.style.background="#f5f0ff"; e.currentTarget.style.borderColor="#c4b5fd"; }}
-                  onMouseLeave={e => { e.currentTarget.style.background="#faf9ff"; e.currentTarget.style.borderColor="#e4e0ff"; }}>
-                  <div style={{ width:40, height:40, borderRadius:11, background:"linear-gradient(135deg,#f5f0ff,#e9d5ff)", border:"1.5px solid #ddd6fe", display:"flex", alignItems:"center", justifyContent:"center", fontSize:21, flexShrink:0 }}>{g.emoji||"🏘️"}</div>
-                  <div style={{ flex:1, minWidth:0 }}>
-                    <div style={{ fontWeight:800, fontSize:13, color:"#1a0a3c", fontFamily:"Outfit,sans-serif", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{g.name}</div>
-                    <div style={{ fontSize:11, color:"#8b72be", marginTop:2 }}>{(g.members||[]).length} members</div>
-                  </div>
-                  <div style={{ display:"flex", alignItems:"center", gap:8, flexShrink:0 }}>
-                    <div style={{ display:"flex" }}>{(g.members||[]).slice(0,3).map((m,j) => <div key={m} style={{ width:24, height:24, borderRadius:"50%", background:`linear-gradient(135deg,${SP_COL[j%7]}44,${SP_COL[j%7]}88)`, border:"2px solid #fff", marginLeft:j>0?-7:0, display:"flex", alignItems:"center", justifyContent:"center", fontSize:9, fontWeight:900, color:SP_COL[j%7] }}>{m[0].toUpperCase()}</div>)}</div>
-                    <span style={{ fontSize:10, fontWeight:800, padding:"3px 8px", borderRadius:20, background:"linear-gradient(135deg,#f5f0ff,#e9d5ff)", color:"#7c3aed", border:"1.5px solid #ddd6fe", fontFamily:"Outfit,sans-serif" }}>{g.inviteCode}</span>
-                  </div>
-                </div>
-              ))
-            }
-          </div>
-        </div>
-        <div className="panel">
-          <div className="panel-header"><h3 className="panel-title">⚡ Quick Stats</h3></div>
-          <div style={{ padding:"12px 16px", display:"flex", flexDirection:"column", gap:10 }}>
-            {[
-              { icon:"📈", label:"Largest Split",     value: allExpenses.length ? fmtAmt(Math.max(...allExpenses.map(e=>Number(e.amount)))) : "—",  sub:"single expense",   color:"#7c3aed", bg:"#f5f0ff", bd:"#a855f7" },
-              { icon:"📊", label:"Avg Split Size",    value: allExpenses.length ? fmtAmt(Math.round(allExpenses.reduce((s,e)=>s+Number(e.amount),0)/allExpenses.length)) : "—", sub:"per expense", color:"#0891b2", bg:"#e0fffe", bd:"#22d3ee" },
-              { icon:"🏆", label:"Most Active Group", value: allExpenses.length ? (Object.entries(allExpenses.reduce((a,e)=>({...a,[e.groupName]:(a[e.groupName]||0)+1}),{})).sort((a,b)=>b[1]-a[1])[0]?.[0]||"—") : "—", sub:"by expense count", color:"#d97706", bg:"#fffbeb", bd:"#fbbf24" },
-              { icon:"✅", label:"Fully Settled",     value: allExpenses.length ? `${allExpenses.filter(e=>(e.settledBy||[]).length>=(e.members?.length||1)).length}/${allExpenses.length}` : "0/0", sub:"expenses closed", color:"#16a34a", bg:"#f0fff4", bd:"#4ade80" },
-            ].map((s,i) => (
-              <div key={i} style={{ display:"flex", alignItems:"center", gap:10, padding:"9px 12px", background:s.bg, borderRadius:10, border:`1.5px solid ${s.bd}` }}>
-                <div style={{ width:34, height:34, borderRadius:9, background:"rgba(255,255,255,0.6)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:17, flexShrink:0 }}>{s.icon}</div>
-                <div style={{ flex:1 }}>
-                  <div style={{ fontSize:9, fontWeight:800, color:s.color, letterSpacing:"0.08em", textTransform:"uppercase", fontFamily:"Outfit,sans-serif" }}>{s.label}</div>
-                  <div style={{ fontSize:15, fontWeight:900, color:"#1a0a3c", marginTop:1, fontFamily:"Outfit,sans-serif" }}>{s.value}</div>
-                </div>
-                <div style={{ fontSize:10, color:s.color, opacity:0.7, textAlign:"right", maxWidth:70, fontFamily:"Outfit,sans-serif" }}>{s.sub}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
@@ -3168,14 +3473,31 @@ function AuthScreen({ onLogin }) {
       }}>
         {/* Logo */}
         <div style={{ textAlign: "center", marginBottom: 32 }}>
-          <div style={{ fontSize: 44, marginBottom: 8 }}>💸</div>
+          <div style={{ display: "flex", justifyContent: "center", marginBottom: 10 }}>
+            <svg width="56" height="56" viewBox="0 0 48 48" fill="none">
+              <rect width="48" height="48" rx="13" fill="url(#loginGrad)"/>
+              <defs>
+                <linearGradient id="loginGrad" x1="0" y1="0" x2="48" y2="48">
+                  <stop stopColor="#0891b2"/><stop offset="1" stopColor="#7c3aed"/>
+                </linearGradient>
+              </defs>
+              <circle cx="17" cy="24" r="9" stroke="white" strokeWidth="2.5" fill="none"/>
+              <text x="12.5" y="28.5" fontSize="11" fontWeight="900" fill="white" fontFamily="system-ui">₹</text>
+              <path d="M31 24 L38 18" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
+              <path d="M31 24 L38 30" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
+              <path d="M26 24 L31 24" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
+            </svg>
+          </div>
           <h2 style={{
             fontFamily: "Outfit,sans-serif", fontWeight: 900, fontSize: 28,
             letterSpacing: "-0.04em", margin: 0,
-            background: "linear-gradient(135deg,#7c3aed,#ec4899,#06b6d4)",
+            background: "linear-gradient(135deg,#0891b2,#7c3aed,#ec4899)",
             WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
-          }}>SpendWise</h2>
-          <p style={{ color: "#8b72be", fontSize: 13, marginTop: 4, fontFamily: "Outfit,sans-serif" }}>
+          }}>TrackNSplit</h2>
+          <p style={{ color: "#8b72be", fontSize: 12, marginTop: 4, fontFamily: "Outfit,sans-serif", fontWeight: 600, letterSpacing: "0.08em" }}>
+            Track. Split. Settle.
+          </p>
+          <p style={{ color: "#8b72be", fontSize: 13, marginTop: 8, fontFamily: "Outfit,sans-serif" }}>
             {mode === "login" ? "Welcome back! Sign in to continue." : "Create your account to get started."}
           </p>
         </div>
@@ -3336,7 +3658,7 @@ export default function App() {
   ];
 
   const titles = {
-    Dashboard: { title: "Expense Dashboard", sub: "Overview of your spending" },
+    Dashboard: { title: "Expenszo Dashboard", sub: "Overview of your spending" },
     Expenses: { title: "Manage Expenses", sub: "Add, edit and filter transactions" },
     Analytics: { title: "Analytics", sub: "Visualise your spending patterns" },
     Settings: { title: "Settings", sub: "App configuration" },
@@ -3353,8 +3675,23 @@ export default function App() {
       {/* ── Sidebar ── */}
       <aside className="sidebar">
         <div className="sidebar-logo">
-          <span className="logo-icon">💸</span>
-          <span className="logo-text">{mode === "expenszo" ? "Expenszo" : "Splitzo"}</span>
+          <svg width="32" height="32" viewBox="0 0 48 48" fill="none" style={{ flexShrink: 0 }}>
+            <rect width="48" height="48" rx="13" fill="url(#sidebarGrad)"/>
+            <defs>
+              <linearGradient id="sidebarGrad" x1="0" y1="0" x2="48" y2="48">
+                <stop stopColor="#0891b2"/><stop offset="1" stopColor="#7c3aed"/>
+              </linearGradient>
+            </defs>
+            <circle cx="17" cy="24" r="9" stroke="white" strokeWidth="2.5" fill="none"/>
+            <text x="12.5" y="28.5" fontSize="11" fontWeight="900" fill="white" fontFamily="system-ui">₹</text>
+            <path d="M31 24 L38 18" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
+            <path d="M31 24 L38 30" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
+            <path d="M26 24 L31 24" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
+          </svg>
+          <div style={{ display: "flex", flexDirection: "column", lineHeight: 1.2 }}>
+            <span className="logo-text">TrackNSplit</span>
+            <span style={{ fontSize: 9, color: "rgba(255,255,255,0.45)", fontFamily: "Outfit,sans-serif", fontWeight: 600, letterSpacing: "0.08em" }}>Track. Split. Settle.</span>
+          </div>
         </div>
 
         {/* Mode Switcher */}

@@ -29,15 +29,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             FilterChain filterChain)
             throws ServletException, IOException {
 
-        final String authHeader =
-                request.getHeader("Authorization");
+        final String authHeader = request.getHeader("Authorization");
 
         String username = null;
         String token = null;
 
-        if (authHeader != null &&
-                authHeader.startsWith("Bearer ")) {
-
+        // Extract token from "Bearer <token>" header
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
             token = authHeader.substring(7);
 
             if (jwtUtil.validateToken(token)) {
@@ -45,27 +43,22 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
         }
 
+        // Set authentication in context if token is valid and no auth exists yet
         if (username != null &&
-                SecurityContextHolder
-                        .getContext()
-                        .getAuthentication() == null) {
+                SecurityContextHolder.getContext().getAuthentication() == null) {
 
             UsernamePasswordAuthenticationToken authToken =
                     new UsernamePasswordAuthenticationToken(
                             username,
                             null,
-                            Collections.singletonList(
-                                    new SimpleGrantedAuthority("USER"))
+                            Collections.singletonList(new SimpleGrantedAuthority("USER"))
                     );
 
             authToken.setDetails(
-                    new WebAuthenticationDetailsSource()
-                            .buildDetails(request)
+                    new WebAuthenticationDetailsSource().buildDetails(request)
             );
 
-            SecurityContextHolder
-                    .getContext()
-                    .setAuthentication(authToken);
+            SecurityContextHolder.getContext().setAuthentication(authToken);
         }
 
         filterChain.doFilter(request, response);
