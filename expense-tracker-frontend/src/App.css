@@ -837,6 +837,63 @@ select.form-control {
 ::-webkit-scrollbar-thumb:hover { background: var(--neon-violet); }
 
 /* =============================================
+   SIDEBAR TOGGLE (MOBILE)
+============================================= */
+.hamburger-btn {
+  display: none;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  width: 42px;
+  height: 42px;
+  font-size: 22px;
+  color: var(--neon-violet);
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  top: 24px;
+  left: 20px;
+  z-index: 90;
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition);
+}
+
+.hamburger-btn:hover {
+  border-color: var(--neon-violet);
+  box-shadow: var(--shadow-neon-violet);
+}
+
+.sidebar-close-btn {
+  display: none;
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: none;
+  border: none;
+  font-size: 28px;
+  color: var(--sidebar-text);
+  cursor: pointer;
+  line-height: 1;
+  z-index: 101;
+}
+
+.mobile-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 1, 24, 0.4);
+  backdrop-filter: blur(4px);
+  z-index: 95;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* =============================================
    RESPONSIVE
 ============================================= */
 @media (max-width: 1280px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } }
@@ -847,12 +904,27 @@ select.form-control {
 }
 
 @media (max-width: 768px) {
-  .sidebar { transform: translateX(-100%); }
-  .main-content { margin-left: 0; padding: 20px 16px 36px; }
+  .sidebar { 
+    transform: translateX(-100%); 
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .sidebar.mobile-open { 
+    transform: translateX(0); 
+    box-shadow: 20px 0 60px rgba(0,0,0,0.3);
+  }
+  .main-content { 
+    margin-left: 0; 
+    padding: 85px 16px 36px;  /* Space for top fixed button if needed, or just padding */
+  }
+  .hamburger-btn { display: flex; }
+  .sidebar-close-btn { display: block; }
+  .mobile-backdrop { display: block; }
+
   .stats-grid { grid-template-columns: 1fr 1fr; }
   .charts-grid { grid-template-columns: 1fr; }
   .filters-grid { grid-template-columns: 1fr; }
 }
+
 
 @media (max-width: 480px) {
   .stats-grid { grid-template-columns: 1fr; }
